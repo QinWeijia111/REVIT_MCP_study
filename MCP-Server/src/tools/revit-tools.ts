@@ -238,6 +238,64 @@ export function registerRevitTools(): Tool[] {
                 required: ["wallId", "locationX", "locationY"],
             },
         },
+
+        // 11. 取得所有網格線
+        {
+            name: "get_all_grids",
+            description: "取得專案中所有網格線（Grid）的資訊，包含名稱、方向、起點和終點座標。可用於計算網格交會點。",
+            inputSchema: {
+                type: "object",
+                properties: {},
+            },
+        },
+
+        // 12. 取得柱類型
+        {
+            name: "get_column_types",
+            description: "取得專案中所有可用的柱類型，包含名稱、尺寸和族群資訊。",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    material: {
+                        type: "string",
+                        description: "篩選材質（如：混凝土、鋼），選填",
+                    },
+                },
+            },
+        },
+
+        // 13. 建立柱子
+        {
+            name: "create_column",
+            description: "在指定位置建立柱子。需要指定座標和底部樓層。",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    x: {
+                        type: "number",
+                        description: "柱子位置 X 座標（公釐）",
+                    },
+                    y: {
+                        type: "number",
+                        description: "柱子位置 Y 座標（公釐）",
+                    },
+                    bottomLevel: {
+                        type: "string",
+                        description: "底部樓層名稱",
+                        default: "Level 1",
+                    },
+                    topLevel: {
+                        type: "string",
+                        description: "頂部樓層名稱（選填，如不指定則使用非約束高度）",
+                    },
+                    columnType: {
+                        type: "string",
+                        description: "柱類型名稱（選填，如不指定則使用預設類型）",
+                    },
+                },
+                required: ["x", "y"],
+            },
+        },
     ];
 }
 
