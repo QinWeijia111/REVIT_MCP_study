@@ -6,6 +6,51 @@
 
 ---
 
+## [1.4.1] - 2024-12-18
+
+### 🐛 Bug 修正
+
+#### 目錄重構後的安裝腳本路徑錯誤
+- **問題**：12/17 進行目錄重構（`MCP/MCP/` → `MCP/`），但安裝腳本 `install-addon-bom.ps1` 未同步更新，導致找不到 DLL
+- **症狀**：
+  - 執行安裝時出現「✗ 錯誤：找不到 RevitMCP.dll」
+  - Revit 啟動時無法載入 MCP Plugin
+- **修正**：更新所有路徑參照為單層 `MCP\` 結構
+  - `MCP\bin\Release.2024\RevitMCP.dll`
+  - `MCP\RevitMCP.2024.addin`
+  - `MCP\bin\Release\Newtonsoft.Json.dll`
+- **影響範圍**：所有透過 `install-addon-bom.ps1` 執行安裝的用戶
+
+### 🔧 改進
+
+- **新增 `verify-installation.ps1`**：安裝前驗證工具
+  - 檢查目錄結構是否正確
+  - 檢查 DLL 是否已建置
+  - 檢查安裝腳本路徑是否正確
+  - 提供下一步操作建議
+
+- **更新 `GEMINI.md`**：AI 助手智能部署指南
+  - 新增環境偵測協定（Revit 版本 + AI Client）
+  - 提供版本特定的建置命令對照表
+  - 說明 Revit 2024 的 56 個警告是正常的（API 相容性）
+  - 加入常見問題處理邏輯
+  - 協助 AI 助手為使用者生成客製化部署指令
+
+### 📁 修改檔案
+
+| 檔案 | 變更 |
+|------|------|
+| `scripts/install-addon-bom.ps1` | 修正 3 處路徑：DLL、.addin、Newtonsoft.Json |
+| `scripts/verify-installation.ps1` | 新增安裝驗證工具 |
+
+### ⚠️ 重要提醒
+
+**目錄結構已統一為單層 `MCP\` 結構，所有路徑參照請確認正確：**
+- ✅ 正確：`MCP\bin\Release.2024\RevitMCP.dll`
+- ❌ 錯誤：`MCP\MCP\bin\Release.2024\RevitMCP.dll`
+
+---
+
 ## [1.4.0] - 2025-12-14
 
 ### ✨ 新功能

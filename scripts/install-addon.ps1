@@ -25,7 +25,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 # ============================================================================
 function Test-SafePath {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Path,
         [string]$Description = "路徑"
     )
@@ -64,7 +64,7 @@ function Test-SafePath {
 # ============================================================================
 function Get-FileHashInfo {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$FilePath
     )
     
@@ -235,12 +235,12 @@ Write-Host ""
 Write-Host "正在驗證來源檔案..." -ForegroundColor Yellow
 Write-Host ""
 
-# 定義來源檔案路徑
-$sourceDllRelease = Join-Path $projectRoot "MCP\MCP\bin\Release\RevitMCP.dll"
-$sourceDllRelease2024 = Join-Path $projectRoot "MCP\MCP\bin\Release.2024\RevitMCP.dll"
-$sourceDllDebug = Join-Path $projectRoot "MCP\MCP\bin\Debug\RevitMCP.dll"
-$sourceAddin = Join-Path $projectRoot "MCP\MCP\RevitMCP.addin"
-$sourceAddin2024 = Join-Path $projectRoot "MCP\MCP\RevitMCP.2024.addin"
+# 定義來源檔案路徑 (目錄重構後：MCP\ 單層結構)
+$sourceDllRelease = Join-Path $projectRoot "MCP\bin\Release\RevitMCP.dll"
+$sourceDllRelease2024 = Join-Path $projectRoot "MCP\bin\Release.2024\RevitMCP.dll"
+$sourceDllDebug = Join-Path $projectRoot "MCP\bin\Debug\RevitMCP.dll"
+$sourceAddin = Join-Path $projectRoot "MCP\RevitMCP.addin"
+$sourceAddin2024 = Join-Path $projectRoot "MCP\RevitMCP.2024.addin"
 
 # 決定使用哪個 DLL
 $sourceDll = $null
@@ -267,10 +267,11 @@ else {
     Write-Host ""
     Write-Host "請先製作程式：" -ForegroundColor Yellow
     Write-Host "1. 打開命令提示字元" -ForegroundColor Yellow
-    Write-Host "2. cd `"$projectRoot\MCP\MCP`"" -ForegroundColor Yellow
+    Write-Host "2. cd `"$projectRoot\MCP`"" -ForegroundColor Yellow
     if ($revitVersion -eq "2024") {
         Write-Host "3. dotnet build -c Release RevitMCP.2024.csproj" -ForegroundColor Yellow
-    } else {
+    }
+    else {
         Write-Host "3. dotnet build -c Release" -ForegroundColor Yellow
     }
     Write-Host ""
@@ -371,7 +372,7 @@ catch {
 }
 
 # 複製相依套件（如果存在）
-$sourceJson = Join-Path $projectRoot "MCP\MCP\bin\Release\Newtonsoft.Json.dll"
+$sourceJson = Join-Path $projectRoot "MCP\bin\Release\Newtonsoft.Json.dll"
 if (Test-Path $sourceJson) {
     try {
         Copy-Item -Path $sourceJson -Destination (Join-Path $addonPath "Newtonsoft.Json.dll") -Force -ErrorAction Stop

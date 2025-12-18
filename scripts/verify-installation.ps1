@@ -1,0 +1,97 @@
+# Revit MCP Installation Verification Script
+# Simple version without complex hashtable
+
+$ErrorActionPreference = "Continue"
+
+Write-Host ""
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host "  Revit MCP Installation Verification" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host ""
+
+$scriptDir = $PSScriptRoot
+$projectRoot = Split-Path -Parent -Path $scriptDir
+
+Write-Host "Project Root: $projectRoot" -ForegroundColor Yellow
+Write-Host ""
+
+# Check 1: Directory Structure
+Write-Host "[Check 1] Directory Structure..." -ForegroundColor Cyan
+if (Test-Path "$projectRoot\MCP\MCP") {
+    Write-Host "  WARNING: Old MCP\MCP\ structure detected" -ForegroundColor Yellow
+}
+else {
+    Write-Host "  PASS: Correct MCP\ single-layer structure" -ForegroundColor Green
+}
+
+# Check 2: Project Files
+Write-Host ""
+Write-Host "[Check 2] Project Files..." -ForegroundColor Cyan
+if (Test-Path "$projectRoot\MCP\RevitMCP.2024.csproj") {
+    Write-Host "  FOUND: RevitMCP.2024.csproj" -ForegroundColor Green
+}
+elseif (Test-Path "$projectRoot\MCP\RevitMCP.csproj") {
+    Write-Host "  FOUND: RevitMCP.csproj" -ForegroundColor Green
+}
+else {
+    Write-Host "  ERROR: No .csproj file found" -ForegroundColor Red
+}
+
+# Check 3: Built DLL
+Write-Host ""
+Write-Host "[Check 3] Built DLL..." -ForegroundColor Cyan
+$foundDll = $false
+if (Test-Path "$projectRoot\MCP\bin\Release.2024\RevitMCP.dll") {
+    $dll = Get-Item "$projectRoot\MCP\bin\Release.2024\RevitMCP.dll"
+    Write-Host "  FOUND: RevitMCP.dll (2024 Release)" -ForegroundColor Green
+    Write-Host "    Size: $($dll.Length) bytes" -ForegroundColor Gray
+    Write-Host "    Modified: $($dll.LastWriteTime)" -ForegroundColor Gray
+    $foundDll = $true
+}
+elseif (Test-Path "$projectRoot\MCP\bin\Release\RevitMCP.dll") {
+    Write-Host "  FOUND: RevitMCP.dll (Release)" -ForegroundColor Green
+    $foundDll = $true
+}
+else {
+    Write-Host "  WARNING: DLL not built yet" -ForegroundColor Yellow
+    Write-Host "    Need to run: dotnet build -c Release" -ForegroundColor Gray
+}
+
+# Check 4: Install Script
+Write-Host ""
+Write-Host "[Check 4] Install Script..." -ForegroundColor Cyan
+if (Test-Path "$scriptDir\install-addon-bom.ps1") {
+    $scriptContent = Get-Content "$scriptDir\install-addon-bom.ps1" -Raw
+    if ($scriptContent -match 'MCP\\\\MCP\\\\') {
+        Write-Host "  ERROR: Script still contains MCP\\MCP\\ paths" -ForegroundColor Red
+    }
+    else {
+        Write-Host "  PASS: Script paths corrected" -ForegroundColor Green
+    }
+}
+
+# Summary
+Write-Host ""
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Next Steps:" -ForegroundColor Cyan
+Write-Host ""
+
+if (-not $foundDll) {
+    Write-Host "1. Build the project:" -ForegroundColor Yellow
+    Write-Host "   cd `"$projectRoot\MCP`"" -ForegroundColor Gray
+    Write-Host "   dotnet build -c Release RevitMCP.2024.csproj" -ForegroundColor Gray
+    Write-Host ""
+}
+
+Write-Host "2. Run installation:" -ForegroundColor Yellow
+Write-Host "   .\scripts\install-addon-bom.ps1" -ForegroundColor Gray
+Write-Host ""
+
+Write-Host "3. Verify in Revit:" -ForegroundColor Yellow
+Write-Host "   - Close all Revit instances" -ForegroundColor Gray
+Write-Host "   - Restart Revit" -ForegroundColor Gray
+Write-Host "   - Check for MCP Tools panel" -ForegroundColor Gray
+Write-Host ""
+
+Read-Host "Press Enter to continue"
