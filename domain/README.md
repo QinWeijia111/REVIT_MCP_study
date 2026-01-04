@@ -15,6 +15,7 @@
 | `room-boundary.md` | 房間邊界計算 | ✅ |
 | `wall-check.md` | 牆壁檢查機制 | ✅ |
 | `path-maintenance-qa.md` | 路徑維護 QA | ✅ |
+| `qa-checklist.md` | **品質檢查清單** | ✅ |
 | `references/building-code-tw.md` | 台灣建築法規摘要 | ✅ |
 
 ---

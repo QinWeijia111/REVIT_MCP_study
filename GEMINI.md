@@ -69,6 +69,7 @@
 | 防火、耐燃、消防、防火時效 | `domain/fire-rating-check.md` | 防火等級檢查 |
 | 走廊、逃生、通道寬度、避難路徑 | `domain/corridor-analysis-protocol.md` | 走廊分析流程 |
 | 牆壁上色、顏色標示、視覺化 | `domain/element-coloring-workflow.md` | 元素上色流程 |
+| **QA、檢查、驗證、一致性** | `domain/qa-checklist.md` | **品質檢查清單** |
 
 ---
 
