@@ -1,15 +1,15 @@
 /**
- * 查詢 1FL 房間清單
+ * 查询 1FL 房间清单
  */
 
 import WebSocket from 'ws';
 
-const ws = new WebSocket('ws://localhost:8964');
+const ws = new WebSocket('ws://localhost:8999');
 
 ws.on('open', function () {
-    console.log('=== 查詢 1FL 房間清單 ===');
+    console.log('=== 查询 1FL 房间清单 ===');
 
-    // 猜測樓層名稱為 1FL (因為二樓是 2FL)
+    // 猜测楼层名称为 1FL (因为二楼是 2FL)
     const command = {
         CommandName: 'get_rooms_by_level',
         Parameters: {
@@ -25,22 +25,22 @@ ws.on('message', function (data) {
     const response = JSON.parse(data.toString());
 
     if (response.Success) {
-        console.log('\n找到', response.Data.TotalRooms, '間房間');
-        console.log('樓層:', response.Data.Level);
+        console.log('\n找到', response.Data.TotalRooms, '间房间');
+        console.log('楼层:', response.Data.Level);
 
-        console.log('\n房間列表:');
+        console.log('\n房间列表:');
         response.Data.Rooms.forEach(room => {
             console.log(`- [${room.Number}] ${room.Name} (${room.Area} m²)`);
         });
     } else {
-        console.log('查詢失敗:', response.Error);
+        console.log('查询失败:', response.Error);
     }
 
     ws.close();
 });
 
 ws.on('error', function (error) {
-    console.error('連線錯誤:', error.message);
+    console.error('连接错误:', error.message);
 });
 
 ws.on('close', function () {
@@ -48,7 +48,7 @@ ws.on('close', function () {
 });
 
 setTimeout(() => {
-    console.log('超時');
+    console.log('超时');
     ws.close();
     process.exit(1);
 }, 30000);

@@ -3,7 +3,7 @@
  */
 import WebSocket from 'ws';
 
-const ws = new WebSocket('ws://localhost:8964');
+const ws = new WebSocket('ws://localhost:8999');
 
 // Try different category names for columns
 const categoriesToTry = [

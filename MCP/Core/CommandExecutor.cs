@@ -10,7 +10,7 @@ using RevitMCP.Models;
 namespace RevitMCP.Core
 {
     /// <summary>
-    /// 命令執行器 - 執行各種 Revit 操作
+    /// 命令执行器 - 执行各种 Revit 操作
     /// </summary>
     public class CommandExecutor
     {
@@ -22,7 +22,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 共用方法：查找樓層
+        /// 共用方法：查找楼层
         /// </summary>
         private Level FindLevel(Document doc, string levelName, bool useFirstIfNotFound = true)
         {
@@ -42,14 +42,14 @@ namespace RevitMCP.Core
 
             if (level == null)
             {
-                throw new Exception($"找不到樓層: {levelName}");
+                throw new Exception($"找不到楼层: {levelName}");
             }
 
             return level;
         }
 
         /// <summary>
-        /// 執行命令
+        /// 执行命令
         /// </summary>
         public RevitCommandResponse ExecuteCommand(RevitCommandRequest request)
         {
@@ -182,7 +182,7 @@ namespace RevitMCP.Core
                         break;
                     
                     default:
-                        throw new NotImplementedException($"未實作的命令: {request.CommandName}");
+                        throw new NotImplementedException($"未实现的命令: {request.CommandName}");
                 }
 
                 return new RevitCommandResponse
@@ -203,10 +203,10 @@ namespace RevitMCP.Core
             }
         }
 
-        #region 命令實作
+        #region 命令实现
 
         /// <summary>
-        /// 建立牆
+        /// 创建墙
         /// </summary>
         private object CreateWall(JObject parameters)
         {
@@ -218,18 +218,18 @@ namespace RevitMCP.Core
             double endY = parameters["endY"]?.Value<double>() ?? 0;
             double height = parameters["height"]?.Value<double>() ?? 3000;
 
-            // 轉換為英尺 (Revit 內部單位)
+            // 转换为英尺 (Revit 内部单位)
             XYZ start = new XYZ(startX / 304.8, startY / 304.8, 0);
             XYZ end = new XYZ(endX / 304.8, endY / 304.8, 0);
 
-            using (Transaction trans = new Transaction(doc, "建立牆"))
+            using (Transaction trans = new Transaction(doc, "创建墙"))
             {
                 trans.Start();
 
-                // 建立線
+                // 创建线
                 Line line = Line.CreateBound(start, end);
 
-                // 取得預設樓層
+                // 获取默认楼层
                 Level level = new FilteredElementCollector(doc)
                     .OfClass(typeof(Level))
                     .Cast<Level>()
@@ -237,13 +237,13 @@ namespace RevitMCP.Core
 
                 if (level == null)
                 {
-                    throw new Exception("找不到樓層");
+                    throw new Exception("找不到楼层");
                 }
 
-                // 建立牆
+                // 创建墙
                 Wall wall = Wall.Create(doc, line, level.Id, false);
                 
-                // 設定高度
+                // 设置高度
                 Parameter heightParam = wall.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM);
                 if (heightParam != null && !heightParam.IsReadOnly)
                 {
@@ -255,13 +255,13 @@ namespace RevitMCP.Core
                 return new
                 {
                     ElementId = wall.Id.IntegerValue,
-                    Message = $"成功建立牆，ID: {wall.Id.IntegerValue}"
+                    Message = $"成功创建墙，ID: {wall.Id.IntegerValue}"
                 };
             }
         }
 
         /// <summary>
-        /// 取得專案資訊
+        /// 获取项目信息
         /// </summary>
         private object GetProjectInfo()
         {
@@ -282,7 +282,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 取得所有樓層
+        /// 获取所有楼层
         /// </summary>
         private object GetAllLevels()
         {
@@ -296,7 +296,7 @@ namespace RevitMCP.Core
                 {
                     ElementId = l.Id.IntegerValue,
                     Name = l.Name,
-                    Elevation = Math.Round(l.Elevation * 304.8, 2) // 轉換為公釐
+                    Elevation = Math.Round(l.Elevation * 304.8, 2) // 转换为毫米
                 })
                 .ToList();
 
@@ -308,7 +308,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 取得元素資訊
+        /// 获取元素信息
         /// </summary>
         private object GetElementInfo(JObject parameters)
         {
@@ -347,14 +347,14 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 刪除元素
+        /// 删除元素
         /// </summary>
         private object DeleteElement(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
             int elementId = parameters["elementId"]?.Value<int>() ?? 0;
 
-            using (Transaction trans = new Transaction(doc, "刪除元素"))
+            using (Transaction trans = new Transaction(doc, "删除元素"))
             {
                 trans.Start();
 
@@ -369,13 +369,13 @@ namespace RevitMCP.Core
 
                 return new
                 {
-                    Message = $"成功刪除元素 ID: {elementId}"
+                    Message = $"成功删除元素 ID: {elementId}"
                 };
             }
         }
 
         /// <summary>
-        /// 建立樓板
+        /// 创建楼板
         /// </summary>
         private object CreateFloor(JObject parameters)
         {
@@ -386,24 +386,24 @@ namespace RevitMCP.Core
             
             if (pointsArray == null || pointsArray.Count < 3)
             {
-                throw new Exception("需要至少 3 個點來建立樓板");
+                throw new Exception("需要至少 3 个点来创建楼板");
             }
 
-            using (Transaction trans = new Transaction(doc, "建立樓板"))
+            using (Transaction trans = new Transaction(doc, "创建楼板"))
             {
                 trans.Start();
 
-                // 取得樓層
+                // 获取楼层
                 Level level = FindLevel(doc, levelName, true);
 
-                // 建立邊界曲線
+                // 创建边界曲线
                 var points = pointsArray.Select(p => new XYZ(
                     p["x"]?.Value<double>() / 304.8 ?? 0,
                     p["y"]?.Value<double>() / 304.8 ?? 0,
                     0
                 )).ToList();
 
-                // 取得預設樓板類型
+                // 获取默认楼板类型
                 FloorType floorType = new FilteredElementCollector(doc)
                     .OfClass(typeof(FloorType))
                     .Cast<FloorType>()
@@ -411,10 +411,10 @@ namespace RevitMCP.Core
 
                 if (floorType == null)
                 {
-                    throw new Exception("找不到樓板類型");
+                    throw new Exception("找不到楼板类型");
                 }
 
-                // 建立 CurveLoop (Revit 2022+ 使用)
+                // 创建 CurveLoop (Revit 2022+ 使用)
                 CurveLoop curveLoop = new CurveLoop();
                 for (int i = 0; i < points.Count; i++)
                 {
@@ -423,7 +423,7 @@ namespace RevitMCP.Core
                     curveLoop.Append(Line.CreateBound(start, end));
                 }
 
-                // 使用 Floor.Create (適用於 Revit 2022+)
+                // 使用 Floor.Create (适用于 Revit 2022+)
                 Floor floor = Floor.Create(doc, new List<CurveLoop> { curveLoop }, floorType.Id, level.Id);
 
                 trans.Commit();
@@ -432,14 +432,14 @@ namespace RevitMCP.Core
                 {
                     ElementId = floor.Id.IntegerValue,
                     Level = level.Name,
-                    Message = $"成功建立樓板，ID: {floor.Id.IntegerValue}"
+                    Message = $"成功创建楼板，ID: {floor.Id.IntegerValue}"
                 };
             }
         }
 
 
         /// <summary>
-        /// 修改元素參數
+        /// 修改元素参数
         /// </summary>
         private object ModifyElementParameter(JObject parameters)
         {
@@ -450,7 +450,7 @@ namespace RevitMCP.Core
 
             if (string.IsNullOrEmpty(parameterName))
             {
-                throw new Exception("請指定參數名稱");
+                throw new Exception("请指定参数名称");
             }
 
             Element element = doc.GetElement(new ElementId(elementId));
@@ -459,19 +459,19 @@ namespace RevitMCP.Core
                 throw new Exception($"找不到元素 ID: {elementId}");
             }
 
-            using (Transaction trans = new Transaction(doc, "修改參數"))
+            using (Transaction trans = new Transaction(doc, "修改参数"))
             {
                 trans.Start();
 
                 Parameter param = element.LookupParameter(parameterName);
                 if (param == null)
                 {
-                    throw new Exception($"找不到參數: {parameterName}");
+                    throw new Exception($"找不到参数: {parameterName}");
                 }
 
                 if (param.IsReadOnly)
                 {
-                    throw new Exception($"參數 {parameterName} 是唯讀的");
+                    throw new Exception($"参数 {parameterName} 是只读的");
                 }
 
                 bool success = false;
@@ -489,12 +489,12 @@ namespace RevitMCP.Core
                             success = param.Set(iVal);
                         break;
                     default:
-                        throw new Exception($"不支援的參數類型: {param.StorageType}");
+                        throw new Exception($"不支持的参数类型: {param.StorageType}");
                 }
 
                 if (!success)
                 {
-                    throw new Exception($"設定參數失敗");
+                    throw new Exception("设置参数失败");
                 }
 
                 trans.Commit();
@@ -504,13 +504,13 @@ namespace RevitMCP.Core
                     ElementId = elementId,
                     ParameterName = parameterName,
                     NewValue = value,
-                    Message = $"成功修改參數 {parameterName}"
+                    Message = $"成功修改参数 {parameterName}"
                 };
             }
         }
 
         /// <summary>
-        /// 建立門
+        /// 创建门
         /// </summary>
         private object CreateDoor(JObject parameters)
         {
@@ -522,14 +522,14 @@ namespace RevitMCP.Core
             Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
             if (wall == null)
             {
-                throw new Exception($"找不到牆 ID: {wallId}");
+                throw new Exception($"找不到墙 ID: {wallId}");
             }
 
-            using (Transaction trans = new Transaction(doc, "建立門"))
+            using (Transaction trans = new Transaction(doc, "创建门"))
             {
                 trans.Start();
 
-                // 取得門類型
+                // 获取门类型
                 FamilySymbol doorSymbol = new FilteredElementCollector(doc)
                     .OfClass(typeof(FamilySymbol))
                     .OfCategory(BuiltInCategory.OST_Doors)
@@ -538,7 +538,7 @@ namespace RevitMCP.Core
 
                 if (doorSymbol == null)
                 {
-                    throw new Exception("找不到門類型");
+                    throw new Exception("找不到门类型");
                 }
 
                 if (!doorSymbol.IsActive)
@@ -547,7 +547,7 @@ namespace RevitMCP.Core
                     doc.Regenerate();
                 }
 
-                // 取得牆的樓層
+                // 获取墙的楼层
                 Level level = doc.GetElement(wall.LevelId) as Level;
                 XYZ location = new XYZ(locationX / 304.8, locationY / 304.8, level?.Elevation ?? 0);
 
@@ -562,13 +562,13 @@ namespace RevitMCP.Core
                     ElementId = door.Id.IntegerValue,
                     DoorType = doorSymbol.Name,
                     WallId = wallId,
-                    Message = $"成功建立門，ID: {door.Id.IntegerValue}"
+                    Message = $"成功创建门，ID: {door.Id.IntegerValue}"
                 };
             }
         }
 
         /// <summary>
-        /// 建立窗
+        /// 创建窗
         /// </summary>
         private object CreateWindow(JObject parameters)
         {
@@ -580,14 +580,14 @@ namespace RevitMCP.Core
             Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
             if (wall == null)
             {
-                throw new Exception($"找不到牆 ID: {wallId}");
+                throw new Exception($"找不到墙 ID: {wallId}");
             }
 
-            using (Transaction trans = new Transaction(doc, "建立窗"))
+            using (Transaction trans = new Transaction(doc, "创建窗"))
             {
                 trans.Start();
 
-                // 取得窗類型
+                // 获取窗类型
                 FamilySymbol windowSymbol = new FilteredElementCollector(doc)
                     .OfClass(typeof(FamilySymbol))
                     .OfCategory(BuiltInCategory.OST_Windows)
@@ -596,7 +596,7 @@ namespace RevitMCP.Core
 
                 if (windowSymbol == null)
                 {
-                    throw new Exception("找不到窗類型");
+                    throw new Exception("找不到窗类型");
                 }
 
                 if (!windowSymbol.IsActive)
@@ -605,9 +605,9 @@ namespace RevitMCP.Core
                     doc.Regenerate();
                 }
 
-                // 取得牆的樓層
+                // 获取墙的楼层
                 Level level = doc.GetElement(wall.LevelId) as Level;
-                XYZ location = new XYZ(locationX / 304.8, locationY / 304.8, (level?.Elevation ?? 0) + 3); // 窗戶高度 3 英尺
+                XYZ location = new XYZ(locationX / 304.8, locationY / 304.8, (level?.Elevation ?? 0) + 3); // 窗户高度 3 英尺
 
                 FamilyInstance window = doc.Create.NewFamilyInstance(
                     location, windowSymbol, wall, level,
@@ -620,13 +620,13 @@ namespace RevitMCP.Core
                     ElementId = window.Id.IntegerValue,
                     WindowType = windowSymbol.Name,
                     WallId = wallId,
-                    Message = $"成功建立窗，ID: {window.Id.IntegerValue}"
+                    Message = $"成功创建窗，ID: {window.Id.IntegerValue}"
                 };
             }
         }
 
         /// <summary>
-        /// 取得所有網格線
+        /// 获取所有网格线
         /// </summary>
         private object GetAllGrids()
         {
@@ -637,12 +637,12 @@ namespace RevitMCP.Core
                 .Cast<Grid>()
                 .Select(g =>
                 {
-                    // 取得 Grid 的曲線（通常是直線）
+                    // 获取 Grid 的曲线（通常是直线）
                     Curve curve = g.Curve;
                     XYZ startPoint = curve.GetEndPoint(0);
                     XYZ endPoint = curve.GetEndPoint(1);
 
-                    // 判斷方向（水平或垂直）
+                    // 判断方向（水平或垂直）
                     double dx = Math.Abs(endPoint.X - startPoint.X);
                     double dy = Math.Abs(endPoint.Y - startPoint.Y);
                     string direction = dx > dy ? "水平" : "垂直";
@@ -652,7 +652,7 @@ namespace RevitMCP.Core
                         ElementId = g.Id.IntegerValue,
                         Name = g.Name,
                         Direction = direction,
-                        StartX = Math.Round(startPoint.X * 304.8, 2),  // 英尺 → 公釐
+                        StartX = Math.Round(startPoint.X * 304.8, 2),  // 英尺 → 毫米
                         StartY = Math.Round(startPoint.Y * 304.8, 2),
                         EndX = Math.Round(endPoint.X * 304.8, 2),
                         EndY = Math.Round(endPoint.Y * 304.8, 2)
@@ -669,14 +669,14 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 取得柱類型
+        /// 获取柱类型
         /// </summary>
         private object GetColumnTypes(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
             string materialFilter = parameters["material"]?.Value<string>();
 
-            // 查詢結構柱和建築柱的 FamilySymbol
+            // 查询结构柱和建筑柱的 FamilySymbol
             var columnTypes = new FilteredElementCollector(doc)
                 .OfClass(typeof(FamilySymbol))
                 .Cast<FamilySymbol>()
@@ -685,11 +685,11 @@ namespace RevitMCP.Core
                      fs.Category.Id.IntegerValue == (int)BuiltInCategory.OST_StructuralColumns))
                 .Select(fs =>
                 {
-                    // 嘗試取得尺寸參數
+                    // 尝试获取尺寸参数
                     double width = 0, depth = 0;
                     
-                    // 常見的柱尺寸參數名稱
-                    Parameter widthParam = fs.LookupParameter("寬度") ?? 
+                    // 常见的柱尺寸参数名称
+                    Parameter widthParam = fs.LookupParameter("宽度") ?? 
                                           fs.LookupParameter("Width") ?? 
                                           fs.LookupParameter("b");
                     Parameter depthParam = fs.LookupParameter("深度") ?? 
@@ -697,7 +697,7 @@ namespace RevitMCP.Core
                                           fs.LookupParameter("h");
                     
                     if (widthParam != null && widthParam.HasValue)
-                        width = Math.Round(widthParam.AsDouble() * 304.8, 0);  // 轉公釐
+                        width = Math.Round(widthParam.AsDouble() * 304.8, 0);  // 转毫米
                     if (depthParam != null && depthParam.HasValue)
                         depth = Math.Round(depthParam.AsDouble() * 304.8, 0);
 
@@ -727,30 +727,30 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 建立柱子
+        /// 创建柱子
         /// </summary>
         private object CreateColumn(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
 
-            // 解析參數
+            // 解析参数
             double x = parameters["x"]?.Value<double>() ?? 0;
             double y = parameters["y"]?.Value<double>() ?? 0;
             string bottomLevelName = parameters["bottomLevel"]?.Value<string>() ?? "Level 1";
             string topLevelName = parameters["topLevel"]?.Value<string>();
             string columnTypeName = parameters["columnType"]?.Value<string>();
 
-            // 轉換座標（公釐 → 英尺）
+            // 转换坐标（毫米 → 英尺）
             XYZ location = new XYZ(x / 304.8, y / 304.8, 0);
 
-            using (Transaction trans = new Transaction(doc, "建立柱子"))
+            using (Transaction trans = new Transaction(doc, "创建柱子"))
             {
                 trans.Start();
 
-                // 取得底部樓層
+                // 获取底部楼层
                 Level bottomLevel = FindLevel(doc, bottomLevelName, true);
 
-                // 取得柱類型（FamilySymbol）
+                // 获取柱类型（FamilySymbol）
                 FamilySymbol columnSymbol = new FilteredElementCollector(doc)
                     .OfClass(typeof(FamilySymbol))
                     .Cast<FamilySymbol>()
@@ -764,18 +764,18 @@ namespace RevitMCP.Core
                 if (columnSymbol == null)
                 {
                     throw new Exception(string.IsNullOrEmpty(columnTypeName) 
-                        ? "專案中沒有可用的柱類型" 
-                        : $"找不到柱類型: {columnTypeName}");
+                        ? "项目中没有可用的柱类型" 
+                        : $"找不到柱类型: {columnTypeName}");
                 }
 
-                // 確保 FamilySymbol 已啟用
+                // 确保 FamilySymbol 已启用
                 if (!columnSymbol.IsActive)
                 {
                     columnSymbol.Activate();
                     doc.Regenerate();
                 }
 
-                // 建立柱子
+                // 创建柱子
                 FamilyInstance column = doc.Create.NewFamilyInstance(
                     location,
                     columnSymbol,
@@ -783,7 +783,7 @@ namespace RevitMCP.Core
                     Autodesk.Revit.DB.Structure.StructuralType.Column
                 );
 
-                // 設定頂部樓層（如果有指定）
+                // 设置顶部楼层（如果有指定）
                 if (!string.IsNullOrEmpty(topLevelName))
                 {
                     Level topLevel = new FilteredElementCollector(doc)
@@ -811,13 +811,13 @@ namespace RevitMCP.Core
                     Level = bottomLevel.Name,
                     LocationX = x,
                     LocationY = y,
-                    Message = $"成功建立柱子，ID: {column.Id.IntegerValue}"
+                    Message = $"成功创建柱子，ID: {column.Id.IntegerValue}"
                 };
             }
         }
 
         /// <summary>
-        /// 取得家具類型
+        /// 获取家具类型
         /// </summary>
         private object GetFurnitureTypes(JObject parameters)
         {
@@ -862,17 +862,17 @@ namespace RevitMCP.Core
             string levelName = parameters["level"]?.Value<string>() ?? "Level 1";
             double rotation = parameters["rotation"]?.Value<double>() ?? 0;
 
-            // 轉換座標（公釐 → 英尺）
+            // 转换坐标（毫米 → 英尺）
             XYZ location = new XYZ(x / 304.8, y / 304.8, 0);
 
             using (Transaction trans = new Transaction(doc, "放置家具"))
             {
                 trans.Start();
 
-                // 取得樓層
+                // 获取楼层
                 Level level = FindLevel(doc, levelName, true);
 
-                // 取得家具類型
+                // 获取家具类型
                 FamilySymbol furnitureSymbol = new FilteredElementCollector(doc)
                     .OfClass(typeof(FamilySymbol))
                     .OfCategory(BuiltInCategory.OST_Furniture)
@@ -882,10 +882,10 @@ namespace RevitMCP.Core
 
                 if (furnitureSymbol == null)
                 {
-                    throw new Exception($"找不到家具類型: {furnitureTypeName}");
+                    throw new Exception($"找不到家具类型: {furnitureTypeName}");
                 }
 
-                // 確保 FamilySymbol 已啟用
+                // 确保 FamilySymbol 已启用
                 if (!furnitureSymbol.IsActive)
                 {
                     furnitureSymbol.Activate();
@@ -900,7 +900,7 @@ namespace RevitMCP.Core
                     Autodesk.Revit.DB.Structure.StructuralType.NonStructural
                 );
 
-                // 旋轉
+                // 旋转
                 if (Math.Abs(rotation) > 0.001)
                 {
                     Line axis = Line.CreateBound(location, location + XYZ.BasisZ);
@@ -924,7 +924,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 取得房間資訊
+        /// 获取房间信息
         /// </summary>
         private object GetRoomInfo(JObject parameters)
         {
@@ -951,19 +951,19 @@ namespace RevitMCP.Core
             if (room == null)
             {
                 throw new Exception(roomId.HasValue 
-                    ? $"找不到房間 ID: {roomId}" 
-                    : $"找不到房間名稱包含: {roomName}");
+                    ? $"找不到房间 ID: {roomId}" 
+                    : $"找不到房间名称包含: {roomName}");
             }
 
-            // 取得房間位置點
+            // 获取房间位置点
             LocationPoint locPoint = room.Location as LocationPoint;
             XYZ center = locPoint?.Point ?? XYZ.Zero;
 
-            // 取得 BoundingBox
+            // 获取 BoundingBox
             BoundingBoxXYZ bbox = room.get_BoundingBox(null);
             
-            // 取得面積
-            double area = room.Area * 0.092903; // 平方英尺 → 平方公尺
+            // 获取面积
+            double area = room.Area * 0.092903; // 平方英尺 → 平方米
 
             return new
             {
@@ -985,7 +985,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 取得樓層房間清單
+        /// 获取楼层房间列表
         /// </summary>
         private object GetRoomsByLevel(JObject parameters)
         {
@@ -995,35 +995,35 @@ namespace RevitMCP.Core
 
             if (string.IsNullOrEmpty(levelName))
             {
-                throw new Exception("請指定樓層名稱");
+                throw new Exception("请指定楼层名称");
             }
 
-            // 取得指定樓層
+            // 获取指定楼层
             Level targetLevel = FindLevel(doc, levelName, false);
 
-            // 取得該樓層的所有房間
+            // 获取该楼层的所有房间
             var rooms = new FilteredElementCollector(doc)
                 .OfCategory(BuiltInCategory.OST_Rooms)
                 .WhereElementIsNotElementType()
                 .Cast<Room>()
                 .Where(r => r.LevelId == targetLevel.Id)
-                .Where(r => r.Area > 0) // 排除面積為 0 的房間（未封閉）
+                .Where(r => r.Area > 0) // 排除面积为 0 的房间（未封闭）
                 .Select(r => 
                 {
                     string roomName = r.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString();
-                    bool hasName = !string.IsNullOrEmpty(roomName) && roomName != "房間";
+                    bool hasName = !string.IsNullOrEmpty(roomName) && roomName != "房间";
                     
-                    // 取得房間中心點
+                    // 获取房间中心点
                     LocationPoint locPoint = r.Location as LocationPoint;
                     XYZ center = locPoint?.Point ?? XYZ.Zero;
                     
-                    // 取得面積（平方英尺 → 平方公尺）
+                    // 获取面积（平方英尺 → 平方平方米）
                     double areaM2 = r.Area * 0.092903;
                     
                     return new
                     {
                         ElementId = r.Id.IntegerValue,
-                        Name = roomName ?? "未命名",
+                    Name = roomName ?? "未命名",
                         Number = r.Number,
                         Area = Math.Round(areaM2, 2),
                         HasName = hasName,
@@ -1035,7 +1035,7 @@ namespace RevitMCP.Core
                 .OrderBy(r => r.Number)
                 .ToList();
 
-            // 計算統計
+            // 计算统计
             double totalArea = rooms.Sum(r => r.Area);
             int roomsWithName = rooms.Count(r => r.HasName);
             int roomsWithoutName = rooms.Count(r => !r.HasName);
@@ -1056,7 +1056,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 取得所有視圖
+        /// 获取所有视图
         /// </summary>
         private object GetAllViews(JObject parameters)
         {
@@ -1101,7 +1101,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 取得目前視圖
+        /// 获取当前视图
         /// </summary>
         private object GetActiveView()
         {
@@ -1125,7 +1125,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 切換視圖
+        /// 切换视图
         /// </summary>
         private object SetActiveView(JObject parameters)
         {
@@ -1135,7 +1135,7 @@ namespace RevitMCP.Core
             View view = doc.GetElement(new ElementId(viewId)) as View;
             if (view == null)
             {
-                throw new Exception($"找不到視圖 ID: {viewId}");
+                throw new Exception($"找不到视图 ID: {viewId}");
             }
 
             _uiApp.ActiveUIDocument.ActiveView = view;
@@ -1145,25 +1145,25 @@ namespace RevitMCP.Core
                 Success = true,
                 ViewId = viewId,
                 ViewName = view.Name,
-                Message = $"已切換至視圖: {view.Name}"
+                Message = $"已切换至视图: {view.Name}"
             };
         }
 
         /// <summary>
-        /// 選取元素
+        /// 选取元素
         /// </summary>
         private object SelectElement(JObject parameters)
         {
             var elementIds = new List<ElementId>();
             
-            // 支援單一 ID
+            // 支持单一 ID
             if (parameters.ContainsKey("elementId"))
             {
                 int id = parameters["elementId"].Value<int>();
                 if (id > 0) elementIds.Add(new ElementId(id));
             }
 
-            // 支援多個 ID
+            // 支持多个 ID
             if (parameters.ContainsKey("elementIds"))
             {
                 var ids = parameters["elementIds"].Values<int>();
@@ -1180,19 +1180,19 @@ namespace RevitMCP.Core
 
             Document doc = _uiApp.ActiveUIDocument.Document;
             
-            // 選取元素
+            // 选取元素
             _uiApp.ActiveUIDocument.Selection.SetElementIds(elementIds);
 
             return new
             {
                 Success = true,
                 Count = elementIds.Count,
-                Message = $"已選取 {elementIds.Count} 個元素"
+                Message = $"已选取 {elementIds.Count} 个元素"
             };
         }
 
         /// <summary>
-        /// 縮放至元素
+        /// 缩放至元素
         /// </summary>
         private object ZoomToElement(JObject parameters)
         {
@@ -1205,7 +1205,7 @@ namespace RevitMCP.Core
                 throw new Exception($"找不到元素 ID: {elementId}");
             }
 
-            // 顯示元素（會自動縮放）
+            // 显示元素（会自动缩放）
             var elementIds = new List<ElementId> { new ElementId(elementId) };
             _uiApp.ActiveUIDocument.ShowElements(elementIds);
 
@@ -1214,12 +1214,12 @@ namespace RevitMCP.Core
                 Success = true,
                 ElementId = elementId,
                 ElementName = element.Name,
-                Message = $"已縮放至元素: {element.Name}"
+                Message = $"已缩放至元素: {element.Name}"
             };
         }
 
         /// <summary>
-        /// 測量距離
+        /// 测量距离
         /// </summary>
         private object MeasureDistance(JObject parameters)
         {
@@ -1230,7 +1230,7 @@ namespace RevitMCP.Core
             double p2y = parameters["point2Y"]?.Value<double>() ?? 0;
             double p2z = parameters["point2Z"]?.Value<double>() ?? 0;
 
-            // 轉換為英尺
+            // 转换为英尺
             XYZ point1 = new XYZ(p1x / 304.8, p1y / 304.8, p1z / 304.8);
             XYZ point2 = new XYZ(p2x / 304.8, p2y / 304.8, p2z / 304.8);
 
@@ -1247,7 +1247,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 取得牆資訊
+        /// 获取墙信息
         /// </summary>
         private object GetWallInfo(JObject parameters)
         {
@@ -1257,23 +1257,23 @@ namespace RevitMCP.Core
             Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
             if (wall == null)
             {
-                throw new Exception($"找不到牆 ID: {wallId}");
+                throw new Exception($"找不到墙 ID: {wallId}");
             }
 
-            // 取得牆的位置曲線
+            // 获取墙的位置曲线
             LocationCurve locCurve = wall.Location as LocationCurve;
             Curve curve = locCurve?.Curve;
 
             XYZ startPoint = curve?.GetEndPoint(0) ?? XYZ.Zero;
             XYZ endPoint = curve?.GetEndPoint(1) ?? XYZ.Zero;
 
-            // 取得牆厚度
-            double thickness = wall.Width * 304.8; // 英尺 → 公釐
+            // 获取墙厚度
+            double thickness = wall.Width * 304.8; // 英尺 → 毫米
 
-            // 取得牆長度
+            // 获取墙长度
             double length = curve != null ? curve.Length * 304.8 : 0;
 
-            // 取得牆高度
+            // 获取墙高度
             Parameter heightParam = wall.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM);
             double height = heightParam != null ? heightParam.AsDouble() * 304.8 : 0;
 
@@ -1294,7 +1294,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 建立尺寸標註
+        /// 创建尺寸标注
         /// </summary>
         private object CreateDimension(JObject parameters)
         {
@@ -1310,40 +1310,40 @@ namespace RevitMCP.Core
             View view = doc.GetElement(new ElementId(viewId)) as View;
             if (view == null)
             {
-                throw new Exception($"找不到視圖 ID: {viewId}");
+                throw new Exception($"找不到视图 ID: {viewId}");
             }
 
-            using (Transaction trans = new Transaction(doc, "建立尺寸標註"))
+            using (Transaction trans = new Transaction(doc, "创建尺寸标注"))
             {
                 trans.Start();
 
-                // 轉換座標
+                // 转换坐标
                 XYZ start = new XYZ(startX / 304.8, startY / 304.8, 0);
                 XYZ end = new XYZ(endX / 304.8, endY / 304.8, 0);
 
-                // 建立參考線
+                // 创建参考线
                 Line line = Line.CreateBound(start, end);
 
-                // 建立尺寸標註用的參考陣列
+                // 创建尺寸标注用的参考数组
                 ReferenceArray refArray = new ReferenceArray();
 
-                // 使用 DetailCurve 作為參考
-                // 先建立兩個詳圖線作為參考點
+                // 使用 DetailCurve 作为参考
+                // 先创建两个详图线作为参考点
                 XYZ perpDir = new XYZ(-(end.Y - start.Y), end.X - start.X, 0).Normalize();
                 double offsetFeet = offset / 304.8;
 
-                // 偏移後的標註線位置
+                // 偏移后的标注线位置
                 XYZ dimLinePoint = start.Add(perpDir.Multiply(offsetFeet));
                 Line dimLine = Line.CreateBound(
                     start.Add(perpDir.Multiply(offsetFeet)),
                     end.Add(perpDir.Multiply(offsetFeet))
                 );
 
-                // 使用 NewDetailCurve 建立參考（建立足夠長的線段）
-                // 詳圖線應垂直於標註方向，作為標註的參考點
+                // 使用 NewDetailCurve 创建参考（创建足够长的线段）
+                // 详图线应垂直于标注方向，作为标注的参考点
                 double lineLength = 1.0; // 1 英尺 = 約 305mm
 
-                // 使用 perpDir（垂直方向）來建立詳圖線
+                // 使用 perpDir（垂直方向）来创建详图线
                 DetailCurve dc1 = doc.Create.NewDetailCurve(view, Line.CreateBound(
                     start.Subtract(perpDir.Multiply(lineLength / 2)), 
                     start.Add(perpDir.Multiply(lineLength / 2))));
@@ -1354,10 +1354,10 @@ namespace RevitMCP.Core
                 refArray.Append(dc1.GeometryCurve.Reference);
                 refArray.Append(dc2.GeometryCurve.Reference);
 
-                // 建立尺寸標註
+                // 创建尺寸标注
                 Dimension dim = doc.Create.NewDimension(view, dimLine, refArray);
 
-                // 注意：保留詳圖線作為標註參考點（如需刪除請手動處理）
+                // 注意：保留详图线作为标注参考点（如需删除请手动处理）
 
                 trans.Commit();
 
@@ -1370,13 +1370,13 @@ namespace RevitMCP.Core
                     Unit = "mm",
                     ViewId = viewId,
                     ViewName = view.Name,
-                    Message = $"成功建立尺寸標註: {Math.Round(dimValue, 0)} mm"
+                    Message = $"成功创建尺寸标注: {Math.Round(dimValue, 0)} mm"
                 };
             }
         }
 
         /// <summary>
-        /// 查詢指定位置附近的牆體
+        /// 查询指定位置附近的墙体
         /// </summary>
         private object QueryWallsByLocation(JObject parameters)
         {
@@ -1387,17 +1387,17 @@ namespace RevitMCP.Core
             double searchRadius = parameters["searchRadius"]?.Value<double>() ?? 5000;
             string levelName = parameters["level"]?.Value<string>();
 
-            // 轉換為英尺
+            // 转换为英尺
             XYZ center = new XYZ(centerX / 304.8, centerY / 304.8, 0);
             double radiusFeet = searchRadius / 304.8;
 
-            // 取得所有牆
+            // 获取所有墙
             var wallCollector = new FilteredElementCollector(doc)
                 .OfClass(typeof(Wall))
                 .WhereElementIsNotElementType()
                 .Cast<Wall>();
 
-            // 如果指定樓層，過濾樓層
+            // 如果指定楼层，过滤楼层
             if (!string.IsNullOrEmpty(levelName))
             {
                 var level = new FilteredElementCollector(doc)
@@ -1422,7 +1422,7 @@ namespace RevitMCP.Core
                 XYZ startPoint = curve.GetEndPoint(0);
                 XYZ endPoint = curve.GetEndPoint(1);
                 
-                // 計算點到線段的最近距離
+                // 计算点到线段的最近距离
                 XYZ wallDir = (endPoint - startPoint).Normalize();
                 XYZ toCenter = center - startPoint;
                 double proj = toCenter.DotProduct(wallDir);
@@ -1440,14 +1440,14 @@ namespace RevitMCP.Core
 
                 if (distToWall <= searchRadius)
                 {
-                    // 取得牆厚度
+                    // 获取墙厚度
                     double thickness = wall.Width * 304.8;
                     
-                    // 計算牆的方向向量（垂直於位置線）
+                    // 计算墙的方向向量（垂直于位置线）
                     XYZ perpendicular = new XYZ(-wallDir.Y, wallDir.X, 0);
                     double halfThickness = wall.Width / 2;
                     
-                    // 牆的兩個面
+                    // 墙的两个面
                     XYZ face1Point = closestPoint + perpendicular * halfThickness;
                     XYZ face2Point = closestPoint - perpendicular * halfThickness;
 
@@ -1459,7 +1459,7 @@ namespace RevitMCP.Core
                         Thickness = Math.Round(thickness, 2),
                         Length = Math.Round(curve.Length * 304.8, 2),
                         DistanceToCenter = Math.Round(distToWall, 2),
-                        // 位置線座標
+                        // 位置线坐标
                         LocationLine = new
                         {
                             StartX = Math.Round(startPoint.X * 304.8, 2),
@@ -1467,13 +1467,13 @@ namespace RevitMCP.Core
                             EndX = Math.Round(endPoint.X * 304.8, 2),
                             EndY = Math.Round(endPoint.Y * 304.8, 2)
                         },
-                        // 最近點位置
+                        // 最近点位置
                         ClosestPoint = new
                         {
                             X = Math.Round(closestPoint.X * 304.8, 2),
                             Y = Math.Round(closestPoint.Y * 304.8, 2)
                         },
-                        // 兩側面座標（在最近點處）
+                        // 两侧面坐标（在最近点处）
                         Face1 = new
                         {
                             X = Math.Round(face1Point.X * 304.8, 2),
@@ -1484,13 +1484,13 @@ namespace RevitMCP.Core
                             X = Math.Round(face2Point.X * 304.8, 2),
                             Y = Math.Round(face2Point.Y * 304.8, 2)
                         },
-                        // 判斷牆是水平還是垂直
+                        // 判断墙是水平还是垂直
                         Orientation = Math.Abs(wallDir.X) > Math.Abs(wallDir.Y) ? "Horizontal" : "Vertical"
                     });
                 }
             }
 
-            // 直接返回列表（已在搜尋時過濾距離）
+            // 直接返回列表（已在搜索时过滤距离）
 
             return new
             {
@@ -1503,7 +1503,7 @@ namespace RevitMCP.Core
 
 
         /// <summary>
-        /// 查詢視圖中的元素
+        /// 查询视图中的元素
         /// </summary>
         private object QueryElements(JObject parameters)
         {
@@ -1517,15 +1517,15 @@ namespace RevitMCP.Core
                 
                 if (string.IsNullOrEmpty(categoryName))
                 {
-                    throw new Exception("必須提供 category 參數");
+                    throw new Exception("必须提供 category 参数");
                 }
                 
-                // 決定查詢範圍: 指定視圖 或 目前視圖
+                // 决定查询范围: 指定视图 或 当前视图
                 ElementId targetViewId = viewId.HasValue ? new ElementId(viewId.Value) : doc.ActiveView.Id;
                 
                 FilteredElementCollector collector = new FilteredElementCollector(doc, targetViewId);
                 
-                // 嘗試解析 BuiltInCategory
+                // 尝试解析 BuiltInCategory
                 BuiltInCategory category = BuiltInCategory.INVALID;
                 bool isBuiltIn = Enum.TryParse("OST_" + categoryName, true, out category) || 
                                  Enum.TryParse(categoryName, true, out category);
@@ -1538,7 +1538,7 @@ namespace RevitMCP.Core
                 }
                 else
                 {
-                    // 嘗試用 Class 查詢
+                    // 尝试用 Class 查询
                     if (categoryName.Equals("Dimensions", StringComparison.OrdinalIgnoreCase))
                     {
                         elements = collector.OfClass(typeof(Dimension)).ToElements().ToList();
@@ -1561,11 +1561,11 @@ namespace RevitMCP.Core
                     }
                     else
                     {
-                        throw new Exception($"不支援的類別: {categoryName}");
+                        throw new Exception($"不支持的类别: {categoryName}");
                     }
                 }
                 
-                // 提取基本資訊
+                // 提取基本信息
                 var resultList = elements.Take(maxCount).Select(elem =>
                 {
                     var item = new Dictionary<string, object>
@@ -1575,11 +1575,11 @@ namespace RevitMCP.Core
                         { "Category", elem.Category?.Name ?? "" }
                     };
                     
-                    // 特殊處理 Dimension
+                    // 特殊处理 Dimension
                     if (elem is Dimension dim)
                     {
                         if (dim.Value.HasValue)
-                            item.Add("Value", Math.Round(dim.Value.Value * 304.8, 2)); // 轉 mm
+                            item.Add("Value", Math.Round(dim.Value.Value * 304.8, 2)); // 转 mm
                         if (dim.DimensionType != null)
                             item.Add("DimensionType", dim.DimensionType.Name);
                     }
@@ -1599,13 +1599,13 @@ namespace RevitMCP.Core
             }
             catch (Exception ex)
             {
-                 throw new Exception($"QueryElements 錯誤: {ex.Message}");
+                 throw new Exception($"QueryElements 错误: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// 覆寫元素圖形顯示
-        /// 支援平面圖（切割樣式）和立面圖/剖面圖（表面樣式）
+        /// 覆写元素图形显示
+        /// 支持平面图（切割样式）和立面图/剖面图（表面样式）
         /// </summary>
         private object OverrideElementGraphics(JObject parameters)
         {
@@ -1613,26 +1613,26 @@ namespace RevitMCP.Core
             int elementId = parameters["elementId"].Value<int>();
             int? viewId = parameters["viewId"]?.Value<int>();
 
-            // 取得視圖
+            // 获取视图
             View view;
             if (viewId.HasValue)
             {
                 view = doc.GetElement(new ElementId(viewId.Value)) as View;
                 if (view == null)
-                    throw new Exception($"找不到視圖 ID: {viewId}");
+                    throw new Exception($"找不到视图 ID: {viewId}");
             }
             else
             {
                 view = _uiApp.ActiveUIDocument.ActiveView;
             }
 
-            // 取得元素
+            // 获取元素
             Element element = doc.GetElement(new ElementId(elementId));
             if (element == null)
                 throw new Exception($"找不到元素 ID: {elementId}");
 
-            // 判斷使用切割樣式或表面樣式
-            // patternMode: "auto" (自動根據視圖類型), "cut" (切割), "surface" (表面)
+            // 判断使用切割样式或表面样式
+            // patternMode: "auto" (自动根据视图类型), "cut" (切割), "surface" (表面)
             string patternMode = parameters["patternMode"]?.Value<string>() ?? "auto";
             
             bool useCutPattern = false;
@@ -1646,8 +1646,8 @@ namespace RevitMCP.Core
             }
             else // auto
             {
-                // 平面圖、天花板平面圖使用切割樣式
-                // 立面圖、剖面圖、3D 視圖使用表面樣式
+                // 平面图、天花板平面图使用切割样式
+                // 立面图、剖面图、3D 视图使用表面样式
                 useCutPattern = (view.ViewType == ViewType.FloorPlan || 
                                  view.ViewType == ViewType.CeilingPlan ||
                                  view.ViewType == ViewType.AreaPlan ||
@@ -1658,13 +1658,13 @@ namespace RevitMCP.Core
             {
                 trans.Start();
 
-                // 建立覆寫設定
+                // 创建覆写设置
                 OverrideGraphicSettings overrideSettings = new OverrideGraphicSettings();
 
-                // 取得實心填滿圖樣 ID
+                // 获取实心填充图样 ID
                 ElementId solidPatternId = GetSolidFillPatternId(doc);
 
-                // 設定填滿顏色
+                // 设置填充颜色
                 if (parameters["surfaceFillColor"] != null)
                 {
                     var colorObj = parameters["surfaceFillColor"];
@@ -1675,7 +1675,7 @@ namespace RevitMCP.Core
 
                     if (useCutPattern)
                     {
-                        // 平面圖：使用切割樣式（前景）
+                        // 平面图：使用切割样式（前景）
                         overrideSettings.SetCutForegroundPatternColor(fillColor);
                         if (solidPatternId != null && solidPatternId != ElementId.InvalidElementId)
                         {
@@ -1685,7 +1685,7 @@ namespace RevitMCP.Core
                     }
                     else
                     {
-                        // 立面圖/剖面圖：使用表面樣式
+                        // 立面图/剖面图：使用表面样式
                         overrideSettings.SetSurfaceForegroundPatternColor(fillColor);
                         if (solidPatternId != null && solidPatternId != ElementId.InvalidElementId)
                         {
@@ -1695,7 +1695,7 @@ namespace RevitMCP.Core
                     }
                 }
 
-                // 設定線條顏色（可選）
+                // 设置线条颜色（可选）
                 if (parameters["lineColor"] != null)
                 {
                     var lineColorObj = parameters["lineColor"];
@@ -1714,14 +1714,14 @@ namespace RevitMCP.Core
                     }
                 }
 
-                // 設定透明度
+                // 设置透明度
                 int transparency = parameters["transparency"]?.Value<int>() ?? 0;
                 if (transparency > 0)
                 {
                     overrideSettings.SetSurfaceTransparency(transparency);
                 }
 
-                // 應用覆寫
+                // 应用覆写
                 view.SetElementOverrides(new ElementId(elementId), overrideSettings);
 
                 trans.Commit();
@@ -1734,13 +1734,13 @@ namespace RevitMCP.Core
                     ViewType = view.ViewType.ToString(),
                     PatternMode = useCutPattern ? "Cut" : "Surface",
                     ViewName = view.Name,
-                    Message = $"已成功覆寫元素 {elementId} 在視圖 '{view.Name}' 的圖形顯示"
+                    Message = $"已成功覆写元素 {elementId} 在视图 '{view.Name}' 的图形显示"
                 };
             }
         }
 
         /// <summary>
-        /// 清除元素圖形覆寫
+        /// 清除元素图形覆写
         /// </summary>
         private object ClearElementOverride(JObject parameters)
         {
@@ -1749,13 +1749,13 @@ namespace RevitMCP.Core
             var elementIdsArray = parameters["elementIds"] as JArray;
             int? viewId = parameters["viewId"]?.Value<int>();
 
-            // 取得視圖
+            // 获取视图
             View view;
             if (viewId.HasValue)
             {
                 view = doc.GetElement(new ElementId(viewId.Value)) as View;
                 if (view == null)
-                    throw new Exception($"找不到視圖 ID: {viewId}");
+                    throw new Exception($"找不到视图 ID: {viewId}");
             }
             else
             {
@@ -1775,7 +1775,7 @@ namespace RevitMCP.Core
 
             if (elementIds.Count == 0)
             {
-                throw new Exception("請提供至少一個元素 ID");
+                throw new Exception("请提供至少一个元素 ID");
             }
 
             using (Transaction trans = new Transaction(doc, "Clear Element Override"))
@@ -1788,7 +1788,7 @@ namespace RevitMCP.Core
                     Element element = doc.GetElement(new ElementId(elemId));
                     if (element != null)
                     {
-                        // 設定空的覆寫設定 = 重置為預設
+                        // 设置空的覆写设置 = 重置为默认
                         view.SetElementOverrides(new ElementId(elemId), new OverrideGraphicSettings());
                         successCount++;
                     }
@@ -1802,17 +1802,17 @@ namespace RevitMCP.Core
                     ClearedCount = successCount,
                     ViewId = view.Id.IntegerValue,
                     ViewName = view.Name,
-                    Message = $"已清除 {successCount} 個元素在視圖 '{view.Name}' 的圖形覆寫"
+                    Message = $"已清除 {successCount} 个元素在视图 '{view.Name}' 的图形覆写"
                 };
             }
         }
 
         /// <summary>
-        /// 取得實心填滿圖樣 ID
+        /// 获取实心填充图样 ID
         /// </summary>
         private ElementId GetSolidFillPatternId(Document doc)
         {
-            // 嘗試找到實心填滿圖樣
+            // 尝试找到实心填充图样
             FilteredElementCollector collector = new FilteredElementCollector(doc);
             var fillPatterns = collector
                 .OfClass(typeof(FillPatternElement))
@@ -1828,17 +1828,17 @@ namespace RevitMCP.Core
             return ElementId.InvalidElementId;
         }
 
-        // 靜態變數：儲存取消接合的元素對
+        // 静态变量：保存取消接合的元素对
         private static List<Tuple<ElementId, ElementId>> _unjoinedPairs = new List<Tuple<ElementId, ElementId>>();
 
         /// <summary>
-        /// 取消牆體與其他元素（柱子等）的接合關係
+        /// 取消墙体与其他元素（柱子等）的接合关系
         /// </summary>
         private object UnjoinWallJoins(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
             
-            // 取得牆體 ID 列表
+            // 获取墙体 ID 列表
             var wallIdsArray = parameters["wallIds"] as JArray;
             int? viewId = parameters["viewId"]?.Value<int>();
             
@@ -1848,7 +1848,7 @@ namespace RevitMCP.Core
                 wallIds.AddRange(wallIdsArray.Select(id => id.Value<int>()));
             }
             
-            // 如果沒有提供 wallIds，則查詢視圖中所有牆體
+            // 如果没有提供 wallIds，则查询视图中所有墙体
             if (wallIds.Count == 0 && viewId.HasValue)
             {
                 var collector = new FilteredElementCollector(doc, new ElementId(viewId.Value));
@@ -1858,7 +1858,7 @@ namespace RevitMCP.Core
             
             if (wallIds.Count == 0)
             {
-                throw new Exception("請提供 wallIds 或 viewId 參數");
+                throw new Exception("请提供 wallIds 或 viewId 参数");
             }
 
             int unjoinedCount = 0;
@@ -1873,16 +1873,16 @@ namespace RevitMCP.Core
                     Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
                     if (wall == null) continue;
 
-                    // 取得牆體的 BoundingBox 來找附近的柱子
+                    // 获取墙体的 BoundingBox 来找附近的柱子
                     BoundingBoxXYZ bbox = wall.get_BoundingBox(null);
                     if (bbox == null) continue;
 
-                    // 擴大搜尋範圍
+                    // 扩大搜索范围
                     XYZ min = bbox.Min - new XYZ(1, 1, 1);
                     XYZ max = bbox.Max + new XYZ(1, 1, 1);
                     Outline outline = new Outline(min, max);
 
-                    // 查詢附近的柱子
+                    // 查询附近的柱子
                     var columnCollector = new FilteredElementCollector(doc)
                         .OfCategory(BuiltInCategory.OST_Columns)
                         .WherePasses(new BoundingBoxIntersectsFilter(outline));
@@ -1906,7 +1906,7 @@ namespace RevitMCP.Core
                         }
                         catch
                         {
-                            // 忽略無法取消接合的元素
+                            // 忽略无法取消接合的元素
                         }
                     }
                 }
@@ -1920,12 +1920,12 @@ namespace RevitMCP.Core
                 UnjoinedCount = unjoinedCount,
                 WallCount = wallIds.Count,
                 StoredPairs = _unjoinedPairs.Count,
-                Message = $"已取消 {unjoinedCount} 個接合關係"
+                Message = $"已取消 {unjoinedCount} 个接合关系"
             };
         }
 
         /// <summary>
-        /// 恢復之前取消的接合關係
+        /// 恢复之前取消的接合关系
         /// </summary>
         private object RejoinWallJoins(JObject parameters)
         {
@@ -1937,7 +1937,7 @@ namespace RevitMCP.Core
                 {
                     Success = true,
                     RejoinedCount = 0,
-                    Message = "沒有需要恢復的接合關係"
+                    Message = "没有需要恢复的接合关系"
                 };
             }
 
@@ -1965,7 +1965,7 @@ namespace RevitMCP.Core
                     }
                     catch
                     {
-                        // 忽略無法恢復接合的元素
+                        // 忽略无法恢复接合的元素
                     }
                 }
 
@@ -1980,7 +1980,7 @@ namespace RevitMCP.Core
                 Success = true,
                 RejoinedCount = rejoinedCount,
                 TotalPairs = storedCount,
-                Message = $"已恢復 {rejoinedCount} 個接合關係"
+                Message = $"已恢复 {rejoinedCount} 个接合关系"
             };
         }
 

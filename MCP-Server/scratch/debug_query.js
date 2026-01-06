@@ -4,7 +4,7 @@
 import WebSocket from 'ws';
 import fs from 'fs';
 
-const ws = new WebSocket('ws://localhost:8964');
+const ws = new WebSocket('ws://localhost:8999');
 
 ws.on('open', () => {
     console.log('Checking query result...');

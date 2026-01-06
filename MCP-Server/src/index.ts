@@ -2,7 +2,7 @@
 
 /**
  * Revit MCP Server
- * 提供 AI 與 Revit 之間的 MCP 協定橋接
+ * 提供 AI 与 Revit 之间的 MCP 协议桥接
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -15,7 +15,7 @@ import {
 import { RevitSocketClient } from "./socket.js";
 import { registerRevitTools, executeRevitTool } from "./tools/revit-tools.js";
 
-// MCP 伺服器實例
+// MCP 服务器实例
 const server = new Server(
     {
         name: "revit-mcp-server",
@@ -28,40 +28,40 @@ const server = new Server(
     }
 );
 
-// Revit Socket 客戶端
+// Revit Socket 客户端
 const revitClient = new RevitSocketClient();
 
 /**
- * 處理工具列表請求
+ * 处理工具列表请求
  */
 server.setRequestHandler(ListToolsRequestSchema, async () => {
     const tools = registerRevitTools();
-    console.error(`[MCP Server] 已註冊 ${tools.length} 個 Revit 工具`);
+    console.error(`[MCP Server] 已注册 ${tools.length} 个 Revit 工具`);
     return { tools };
 });
 
 /**
- * 處理工具呼叫請求
+ * 处理工具调用请求
  */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    console.error(`[MCP Server] 執行工具: ${request.params.name}`);
-    console.error(`[MCP Server] 參數:`, JSON.stringify(request.params.arguments, null, 2));
+    console.error(`[MCP Server] 执行工具: ${request.params.name}`);
+    console.error(`[MCP Server] 参数:`, JSON.stringify(request.params.arguments, null, 2));
 
     try {
-        // 檢查 Revit 連線狀態
+        // 检查 Revit 连接状态
         if (!revitClient.isConnected()) {
-            console.error("[MCP Server] Revit 未連線，嘗試連線...");
+            console.error("[MCP Server] Revit 未连接，尝试连接...");
             await revitClient.connect();
         }
 
-        // 執行 Revit 工具
+        // 执行 Revit 工具
         const result = await executeRevitTool(
             request.params.name,
             request.params.arguments || {},
             revitClient
         );
 
-        console.error(`[MCP Server] 工具執行成功`);
+        console.error(`[MCP Server] 工具执行成功`);
 
         return {
             content: [
@@ -73,13 +73,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`[MCP Server] 工具執行失敗: ${errorMessage}`);
+        console.error(`[MCP Server] 工具执行失败: ${errorMessage}`);
 
         return {
             content: [
                 {
                     type: "text",
-                    text: `錯誤: ${errorMessage}`,
+                    text: `错误: ${errorMessage}`,
                 },
             ],
             isError: true,
@@ -88,20 +88,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 /**
- * 啟動伺服器
+ * 启动服务器
  */
 async function main() {
-    console.error("Revit MCP Server 啟動中...");
-    console.error("等待 Revit Plugin 連線...");
+    console.error("Revit MCP Server 启动中...");
+    console.error("等待 Revit Plugin 连接...");
 
     const transport = new StdioServerTransport();
     await server.connect(transport);
 
-    console.error("MCP Server 已準備就緒");
-    console.error("Socket 伺服器監聽埠號: 8964");
+    console.error("MCP Server 已准备就绪");
+    console.error("Socket 服务器监听端口: 8999");
 }
 
 main().catch((error) => {
-    console.error("伺服器啟動失敗:", error);
+    console.error("服务器启动失败:", error);
     process.exit(1);
 });

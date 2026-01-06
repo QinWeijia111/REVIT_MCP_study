@@ -18,45 +18,45 @@ namespace RevitMCP
         {
             try
             {
-                // 建立功能區面板
+                // 创建功能区面板
                 RibbonPanel panel = application.CreateRibbonPanel("MCP Tools");
                 
                 string assemblyPath = Assembly.GetExecutingAssembly().Location;
 
-                // 1. MCP 服務切換按鈕 (Toggle)
+                // 1. MCP 服务切换按钮 (Toggle)
                 PushButtonData toggleButtonData = new PushButtonData(
                     "MCPToggle",
-                    "MCP 服務\n(開/關)",
+                    "MCP 服务\n(开/关)",
                     assemblyPath,
                     "RevitMCP.Commands.ToggleServiceCommand");
-                toggleButtonData.ToolTip = "啟動或停止 MCP WebSocket 服務";
-                // 建議：如果有圖示資源，可以在這裡設定 LargeImage
+                toggleButtonData.ToolTip = "启动或停止 MCP WebSocket 服务";
+                // 建议：如果有图示资源，可以在这里设置 LargeImage
                 PushButton toggleButton = panel.AddItem(toggleButtonData) as PushButton;
 
-                // 3. 設定按鈕
+                // 3. 设置按钮
                 PushButtonData settingsButtonData = new PushButtonData(
                     "MCPSettings",
-                    "MCP\n設定",
+                    "MCP\n设置",
                     assemblyPath,
                     "RevitMCP.Commands.SettingsCommand");
-                settingsButtonData.ToolTip = "開啟 MCP 設定視窗";
+                settingsButtonData.ToolTip = "打开 MCP 设置窗口";
                 PushButton settingsButton = panel.AddItem(settingsButtonData) as PushButton;
 
                 // 初始化配置管理器
                 _ = ConfigManager.Instance;
 
-                // 初始化 ExternalEventManager (必須在 UI 執行緒建立)
+                // 初始化 ExternalEventManager (必须在 UI 线程创建)
                 _ = ExternalEventManager.Instance;
 
                 TaskDialog.Show("RevitMCP", 
-                    "RevitMCP Plugin 已載入\n\n" +
-                    "請點擊「MCP 服務 (開/關)」按鈕來啟用 AI 控制功能");
+                    "RevitMCP 插件已加载\n\n" +
+                    "请点击「MCP 服务 (开/关)」按钮来启用 AI 控制功能");
                 
                 return Result.Succeeded;
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("錯誤", "載入 MCP Tools 失敗: " + ex.Message);
+                TaskDialog.Show("错误", "加载 MCP 工具失败: " + ex.Message);
                 return Result.Failed;
             }
         }
@@ -65,7 +65,7 @@ namespace RevitMCP
         {
             try
             {
-                // 停止 Socket 服務
+                // 停止 Socket 服务
                 if (_socketService != null)
                 {
                     _socketService.Stop();
@@ -80,7 +80,7 @@ namespace RevitMCP
         }
 
         /// <summary>
-        /// 啟動 MCP 服務
+        /// 启动 MCP 服务
         /// </summary>
         public static void StartMCPService(UIApplication uiApp)
         {
@@ -91,31 +91,31 @@ namespace RevitMCP
 
                 if (_socketService != null && _socketService.IsConnected)
                 {
-                    TaskDialog.Show("MCP 服務", "服務已在執行中");
+                    TaskDialog.Show("MCP 服务", "服务已在执行中");
                     return;
                 }
 
-                // 建立 Socket 服務
+                // 建立 Socket 服务
                 _socketService = new SocketService(settings);
 
-                // 訂閱命令接收事件
+                // 订阅命令接收事件
                 _socketService.CommandReceived += OnCommandReceived;
 
-                // 啟動服務
+                // 启动服务
                 _socketService.StartAsync().ConfigureAwait(false);
 
-                // 更新設定
+                // 更新设置
                 settings.IsEnabled = true;
                 ConfigManager.Instance.SaveSettings();
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("錯誤", $"啟動 MCP 服務失敗: {ex.Message}");
+                TaskDialog.Show("错误", $"启动 MCP 服务失败: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// 停止 MCP 服務
+        /// 停止 MCP 服务
         /// </summary>
         public static void StopMCPService()
         {
@@ -133,16 +133,16 @@ namespace RevitMCP
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("錯誤", $"停止 MCP 服務失敗: {ex.Message}");
+                TaskDialog.Show("错误", $"停止 MCP 服务失败: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// 處理接收到的命令
+        /// 处理接收到的命令
         /// </summary>
         private static async void OnCommandReceived(object sender, Models.RevitCommandRequest request)
         {
-            // 使用外部事件在 Revit UI 執行緒執行命令
+            // 使用外部事件在 Revit UI 线程执行命令
             ExternalEventManager.Instance.ExecuteCommand((uiApp) =>
             {
                 try
@@ -150,7 +150,7 @@ namespace RevitMCP
                     var executor = new CommandExecutor(uiApp  );
                     var response = executor.ExecuteCommand(request);
 
-                    // 發送回應
+                    // 发送回应
                     _socketService?.SendResponseAsync(response).ConfigureAwait(false);
                 }
                 catch (Exception ex)

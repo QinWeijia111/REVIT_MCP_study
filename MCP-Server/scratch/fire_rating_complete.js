@@ -5,7 +5,7 @@
 import WebSocket from 'ws';
 import fs from 'fs';
 
-const ws = new WebSocket('ws://localhost:8964');
+const ws = new WebSocket('ws://localhost:8999');
 const log = [];
 
 const COLOR_MAP = {
@@ -15,7 +15,7 @@ const COLOR_MAP = {
     "UNSET": { r: 200, g: 0, b: 200, t: 50 }
 };
 
-const PARAM_NAME = "s_CW_防火防煙性能";
+const PARAM_NAME = "s_CW_防火防\u7159性能";
 
 let viewId = null;
 let wallIds = [];
@@ -25,10 +25,13 @@ let stage = 'get_view';
 let dist = {};
 
 function getColor(val) {
+    const normalizedVal = String(val || "")
+        .replace(/\u6642/g, "时")
+        .replace(/\u7121/g, "无");
     if (!val || val === "") return COLOR_MAP.UNSET;
-    if (val === "2" || (val.includes("2") && val.includes("小時"))) return COLOR_MAP["2HR"];
-    if (val === "1" || (val.includes("1") && val.includes("小時"))) return COLOR_MAP["1HR"];
-    if (val.includes("無") || val === "0") return COLOR_MAP.NONE;
+    if (val === "2" || (normalizedVal.includes("2") && normalizedVal.includes("小时"))) return COLOR_MAP["2HR"];
+    if (val === "1" || (normalizedVal.includes("1") && normalizedVal.includes("小时"))) return COLOR_MAP["1HR"];
+    if (normalizedVal.includes("无") || val === "0") return COLOR_MAP.NONE;
     return COLOR_MAP["1HR"];
 }
 

@@ -1,100 +1,100 @@
 /**
- * Revit MCP 工具定義
- * 定義可供 AI 呼叫的 Revit 操作工具
+ * Revit MCP 工具定义
+ * 定义可供 AI 调用的 Revit 操作工具
  */
 
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { RevitSocketClient } from "../socket.js";
 
 /**
- * 註冊所有 Revit 工具
+ * 注册所有 Revit 工具
  */
 export function registerRevitTools(): Tool[] {
     return [
-        // 1. 建立牆元素
+        // 1. 创建墙元素
         {
             name: "create_wall",
-            description: "在 Revit 中建立一面牆。需要指定起點、終點座標和高度。",
+            description: "在 Revit 中创建一面墙。需要指定起点、终点坐标和高度。",
             inputSchema: {
                 type: "object",
                 properties: {
                     startX: {
                         type: "number",
-                        description: "起點 X 座標（公釐）",
+                        description: "起点 X 坐标（毫米）",
                     },
                     startY: {
                         type: "number",
-                        description: "起點 Y 座標（公釐）",
+                        description: "起点 Y 坐标（毫米）",
                     },
                     endX: {
                         type: "number",
-                        description: "終點 X 座標（公釐）",
+                        description: "终点 X 坐标（毫米）",
                     },
                     endY: {
                         type: "number",
-                        description: "終點 Y 座標（公釐）",
+                        description: "终点 Y 坐标（毫米）",
                     },
                     height: {
                         type: "number",
-                        description: "牆高度（公釐）",
+                        description: "墙高度（毫米）",
                         default: 3000,
                     },
                     wallType: {
                         type: "string",
-                        description: "牆類型名稱（選填）",
+                        description: "墙类型名称（选填）",
                     },
                 },
                 required: ["startX", "startY", "endX", "endY"],
             },
         },
 
-        // 2. 查詢專案資訊
+        // 2. 查询项目信息
         {
             name: "get_project_info",
-            description: "取得目前開啟的 Revit 專案基本資訊，包括專案名稱、建築物名稱、業主等。",
+            description: "获取当前打开的 Revit 项目基本信息，包括项目名称、建筑物名称、业主等。",
             inputSchema: {
                 type: "object",
                 properties: {},
             },
         },
 
-        // 3. 查詢元素
+        // 3. 查询元素
         {
             name: "query_elements",
-            description: "查詢 Revit 專案中的元素。可依類別、族群、類型等條件篩選。",
+            description: "查询 Revit 项目中的元素。可按类别、族群、类型等条件筛选。",
             inputSchema: {
                 type: "object",
                 properties: {
                     category: {
                         type: "string",
-                        description: "元素類別（如：牆、門、窗等）",
+                        description: "元素类别（如：墙、门、窗等）",
                     },
                     family: {
                         type: "string",
-                        description: "族群名稱（選填）",
+                        description: "族群名称（选填）",
                     },
                     type: {
                         type: "string",
-                        description: "類型名稱（選填）",
+                        description: "类型名称（选填）",
                     },
                     level: {
                         type: "string",
-                        description: "樓層名稱（選填）",
+                        description: "楼层名称（选填）",
                     },
                 },
             },
         },
 
-        // 4. 建立樓板
+        // 4. 创建楼板
         {
             name: "create_floor",
-            description: "在 Revit 中建立樓板。需要指定矩形範圍的四個角點座標。",
+            description: "在 Revit 中创建楼板。需要指定矩形范围的四个角点坐标。",
             inputSchema: {
                 type: "object",
                 properties: {
                     points: {
                         type: "array",
-                        description: "樓板邊界點陣列，每個點包含 x, y 座標（公釐）",
+                        description: "楼板边界点数组，每个点包含 x, y 坐标（毫米）",
                         items: {
                             type: "object",
                             properties: {
@@ -105,38 +105,38 @@ export function registerRevitTools(): Tool[] {
                     },
                     levelName: {
                         type: "string",
-                        description: "樓層名稱",
+                        description: "楼层名称",
                         default: "Level 1",
                     },
                     floorType: {
                         type: "string",
-                        description: "樓板類型名稱（選填）",
+                        description: "楼板类型名称（选填）",
                     },
                 },
                 required: ["points"],
             },
         },
 
-        // 5. 刪除元素
+        // 5. 删除元素
         {
             name: "delete_element",
-            description: "依 Element ID 刪除 Revit 元素。",
+            description: "按 Element ID 删除 Revit 元素。",
             inputSchema: {
                 type: "object",
                 properties: {
                     elementId: {
                         type: "number",
-                        description: "要刪除的元素 ID",
+                        description: "要删除的元素 ID",
                     },
                 },
                 required: ["elementId"],
             },
         },
 
-        // 6. 取得元素資訊
+        // 6. 获取元素信息
         {
             name: "get_element_info",
-            description: "取得指定元素的詳細資訊，包括參數、幾何資訊等。",
+            description: "获取指定元素的详细信息，包括参数、几何信息等。",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -149,10 +149,10 @@ export function registerRevitTools(): Tool[] {
             },
         },
 
-        // 7. 修改元素參數
+        // 7. 修改元素参数
         {
             name: "modify_element_parameter",
-            description: "修改 Revit 元素的參數值。",
+            description: "修改 Revit 元素的参数值。",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -162,151 +162,154 @@ export function registerRevitTools(): Tool[] {
                     },
                     parameterName: {
                         type: "string",
-                        description: "參數名稱",
+                        description: "参数名称",
                     },
                     value: {
                         type: "string",
-                        description: "新的參數值",
+                        description: "新的参数值",
                     },
                 },
                 required: ["elementId", "parameterName", "value"],
             },
         },
 
-        // 8. 取得所有樓層
+        // 8. 获取所有楼层
         {
             name: "get_all_levels",
-            description: "取得專案中所有樓層的清單，包括樓層名稱和標高。",
+            description: "获取项目中所有楼层的清单，包括楼层名称和标高。",
             inputSchema: {
                 type: "object",
                 properties: {},
             },
         },
 
-        // 9. 建立門
+        // 9. 创建门
         {
             name: "create_door",
-            description: "在指定的牆上建立門。",
+            description: "在指定的墙上创建门。",
             inputSchema: {
                 type: "object",
                 properties: {
                     wallId: {
                         type: "number",
-                        description: "要放置門的牆 ID",
+                        description: "要放置门的墙 ID",
                     },
                     locationX: {
                         type: "number",
-                        description: "門在牆上的位置 X 座標（公釐）",
+                        description: "门在墙上的位置 X 坐标（毫米）",
                     },
                     locationY: {
                         type: "number",
-                        description: "門在牆上的位置 Y 座標（公釐）",
+                        description: "门在墙上的位置 Y 坐标（毫米）",
                     },
                     doorType: {
                         type: "string",
-                        description: "門類型名稱（選填）",
+                        description: "门类型名称（选填）",
                     },
                 },
                 required: ["wallId", "locationX", "locationY"],
             },
         },
 
-        // 10. 建立窗
+        // 10. 创建窗
         {
             name: "create_window",
-            description: "在指定的牆上建立窗。",
+            description: "在指定的墙上创建窗。",
             inputSchema: {
                 type: "object",
                 properties: {
                     wallId: {
                         type: "number",
-                        description: "要放置窗的牆 ID",
+                        description: "要放置窗的墙 ID",
                     },
                     locationX: {
                         type: "number",
-                        description: "窗在牆上的位置 X 座標（公釐）",
+                        description: "窗在墙上的位置 X 坐标（毫米）",
                     },
                     locationY: {
                         type: "number",
-                        description: "窗在牆上的位置 Y 座標（公釐）",
+                        description: "窗在墙上的位置 Y 坐标（毫米）",
                     },
                     windowType: {
                         type: "string",
-                        description: "窗類型名稱（選填）",
+                        description: "窗类型名称（选填）",
                     },
                 },
                 required: ["wallId", "locationX", "locationY"],
             },
         },
 
-        // 11. 取得所有網格線
+        // 11. 获取所有网格线
         {
             name: "get_all_grids",
-            description: "取得專案中所有網格線（Grid）的資訊，包含名稱、方向、起點和終點座標。可用於計算網格交會點。",
+            description:
+                "获取项目中所有网格线（Grid）的信息，包含名称、方向、起点和终点坐标。可用于计算网格交点。",
             inputSchema: {
                 type: "object",
                 properties: {},
             },
         },
 
-        // 12. 取得柱類型
+        // 12. 获取柱类型
         {
             name: "get_column_types",
-            description: "取得專案中所有可用的柱類型，包含名稱、尺寸和族群資訊。",
+            description: "获取项目中所有可用的柱类型，包含名称、尺寸和族群信息。",
             inputSchema: {
                 type: "object",
                 properties: {
                     material: {
                         type: "string",
-                        description: "篩選材質（如：混凝土、鋼），選填",
+                        description: "筛选材质（如：混凝土、钢），选填",
                     },
                 },
             },
         },
 
-        // 13. 建立柱子
+        // 13. 创建柱子
         {
             name: "create_column",
-            description: "在指定位置建立柱子。需要指定座標和底部樓層。",
+            description: "在指定位置创建柱子。需要指定坐标和底部楼层。",
             inputSchema: {
                 type: "object",
                 properties: {
                     x: {
                         type: "number",
-                        description: "柱子位置 X 座標（公釐）",
+                        description: "柱子位置 X 坐标（毫米）",
                     },
                     y: {
                         type: "number",
-                        description: "柱子位置 Y 座標（公釐）",
+                        description: "柱子位置 Y 坐标（毫米）",
                     },
                     bottomLevel: {
                         type: "string",
-                        description: "底部樓層名稱",
+                        description: "底部楼层名称",
                         default: "Level 1",
                     },
                     topLevel: {
                         type: "string",
-                        description: "頂部樓層名稱（選填，如不指定則使用非約束高度）",
+                        description:
+                            "顶部楼层名称（选填，如不指定则使用非约束高度）",
                     },
                     columnType: {
                         type: "string",
-                        description: "柱類型名稱（選填，如不指定則使用預設類型）",
+                        description:
+                            "柱类型名称（选填，如不指定则使用默认类型）",
                     },
                 },
                 required: ["x", "y"],
             },
         },
 
-        // 14. 取得家具類型
+        // 14. 获取家具类型
         {
             name: "get_furniture_types",
-            description: "取得專案中已載入的家具類型清單，包含名稱和族群資訊。",
+            description: "获取项目中已载入的家具类型清单，包含名称和族群信息。",
             inputSchema: {
                 type: "object",
                 properties: {
                     category: {
                         type: "string",
-                        description: "家具類別篩選（如：椅子、桌子、床），選填",
+                        description: "家具类别筛选（如：椅子、桌子、床），选填",
                     },
                 },
             },
@@ -315,30 +318,31 @@ export function registerRevitTools(): Tool[] {
         // 15. 放置家具
         {
             name: "place_furniture",
-            description: "在指定位置放置家具實例。",
+            description: "在指定位置放置家具实例。",
             inputSchema: {
                 type: "object",
                 properties: {
                     x: {
                         type: "number",
-                        description: "X 座標（公釐）",
+                        description: "X 坐标（毫米）",
                     },
                     y: {
                         type: "number",
-                        description: "Y 座標（公釐）",
+                        description: "Y 坐标（毫米）",
                     },
                     furnitureType: {
                         type: "string",
-                        description: "家具類型名稱（需與 get_furniture_types 回傳的名稱一致）",
+                        description:
+                            "家具类型名称（需与 get_furniture_types 返回的名称一致）",
                     },
                     level: {
                         type: "string",
-                        description: "樓層名稱",
+                        description: "楼层名称",
                         default: "Level 1",
                     },
                     rotation: {
                         type: "number",
-                        description: "旋轉角度（度），預設 0",
+                        description: "旋转角度（度），默认 0",
                         default: 0,
                     },
                 },
@@ -346,39 +350,41 @@ export function registerRevitTools(): Tool[] {
             },
         },
 
-        // 16. 取得房間資訊
+        // 16. 获取房间信息
         {
             name: "get_room_info",
-            description: "取得房間詳細資訊，包含中心點座標和邊界範圍。可用於智慧放置家具。",
+            description:
+                "获取房间详细信息，包含中心点坐标和边界范围。可用于智能放置家具。",
             inputSchema: {
                 type: "object",
                 properties: {
                     roomId: {
                         type: "number",
-                        description: "房間 Element ID（選填，如果知道的話）",
+                        description: "房间 Element ID（选填，如果知道的话）",
                     },
                     roomName: {
                         type: "string",
-                        description: "房間名稱（選填，用於搜尋）",
+                        description: "房间名称（选填，用于搜索）",
                     },
                 },
             },
         },
 
-        // 17. 取得樓層房間清單
+        // 17. 获取楼层房间清单
         {
             name: "get_rooms_by_level",
-            description: "取得指定樓層的所有房間清單，包含名稱、編號、面積、用途等資訊。可用於容積檢討。",
+            description:
+                "获取指定楼层的所有房间清单，包含名称、编号、面积、用途等信息。可用于容积检讨。",
             inputSchema: {
                 type: "object",
                 properties: {
                     level: {
                         type: "string",
-                        description: "樓層名稱（如：1F、Level 1）",
+                        description: "楼层名称（如：1F、Level 1）",
                     },
                     includeUnnamed: {
                         type: "boolean",
-                        description: "是否包含未命名的房間，預設 true",
+                        description: "是否包含未命名的房间，默认 true",
                         default: true,
                     },
                 },
@@ -386,119 +392,123 @@ export function registerRevitTools(): Tool[] {
             },
         },
 
-        // 18. 取得所有視圖
+        // 18. 获取所有视图
         {
             name: "get_all_views",
-            description: "取得專案中所有視圖的清單，包含平面圖、天花圖、3D視圖、剖面圖等。可用於選擇要標註的視圖。",
+            description:
+                "获取项目中所有视图的清单，包含平面图、天花图、3D 视图、剖面图等。可用于选择要标注的视图。",
             inputSchema: {
                 type: "object",
                 properties: {
                     viewType: {
                         type: "string",
-                        description: "視圖類型篩選：FloorPlan（平面圖）、CeilingPlan（天花圖）、ThreeD（3D視圖）、Section（剖面圖）、Elevation（立面圖）",
+                        description:
+                            "视图类型筛选：FloorPlan（平面图）、CeilingPlan（天花图）、ThreeD（3D 视图）、Section（剖面图）、Elevation（立面图）",
                     },
                     levelName: {
                         type: "string",
-                        description: "樓層名稱篩選（選填）",
+                        description: "楼层名称筛选（选填）",
                     },
                 },
             },
         },
 
-        // 19. 取得目前視圖
+        // 19. 获取当前视图
         {
             name: "get_active_view",
-            description: "取得目前開啟的視圖資訊，包含視圖名稱、類型、樓層等。",
+            description:
+                "获取当前打开的视图信息，包含视图名称、类型、楼层等。",
             inputSchema: {
                 type: "object",
                 properties: {},
             },
         },
 
-        // 20. 切換視圖
+        // 20. 切换视图
         {
             name: "set_active_view",
-            description: "切換至指定的視圖。",
+            description: "切换至指定的视图。",
             inputSchema: {
                 type: "object",
                 properties: {
                     viewId: {
                         type: "number",
-                        description: "要切換的視圖 Element ID",
+                        description: "要切换的视图 Element ID",
                     },
                 },
                 required: ["viewId"],
             },
         },
 
-        // 21. 選取元素
+        // 21. 选择元素
         {
             name: "select_element",
-            description: "在 Revit 中選取指定的元素，讓使用者可以視覺化確認目標元素。",
+            description:
+                "在 Revit 中选择指定的元素，让用户可以可视化确认目标元素。",
             inputSchema: {
                 type: "object",
                 properties: {
                     elementId: {
                         type: "number",
-                        description: "要選取的元素 ID (單選)",
+                        description: "要选择的元素 ID (单选)",
                     },
                     elementIds: {
                         type: "array",
                         items: { type: "number" },
-                        description: "要選取的元素 ID 列表 (多選)",
+                        description: "要选择的元素 ID 列表 (多选)",
                     },
                 },
-                // required: ["elementId"], // 讓後端驗證
+                // required: ["elementId"], // 让后端验证
             },
         },
 
-        // 22. 縮放至元素
+        // 22. 缩放至元素
         {
             name: "zoom_to_element",
-            description: "將視圖縮放至指定元素，讓使用者可以快速定位。",
+            description: "将视图缩放至指定元素，让用户可以快速定位。",
             inputSchema: {
                 type: "object",
                 properties: {
                     elementId: {
                         type: "number",
-                        description: "要縮放至的元素 ID",
+                        description: "要缩放至的元素 ID",
                     },
                 },
                 required: ["elementId"],
             },
         },
 
-        // 23. 測量距離
+        // 23. 测量距离
         {
             name: "measure_distance",
-            description: "測量兩個點之間的距離。回傳距離（公釐）。",
+            description: "测量两个点之间的距离。返回距离（毫米）。",
             inputSchema: {
                 type: "object",
                 properties: {
                     point1X: {
                         type: "number",
-                        description: "第一點 X 座標（公釐）",
+                        description: "第一点 X 坐标（毫米）",
                     },
                     point1Y: {
                         type: "number",
-                        description: "第一點 Y 座標（公釐）",
+                        description: "第一点 Y 坐标（毫米）",
                     },
                     point1Z: {
                         type: "number",
-                        description: "第一點 Z 座標（公釐），預設 0",
+                        description: "第一点 Z 坐标（毫米），默认 0",
                         default: 0,
                     },
                     point2X: {
                         type: "number",
-                        description: "第二點 X 座標（公釐）",
+                        description: "第二点 X 坐标（毫米）",
                     },
                     point2Y: {
                         type: "number",
-                        description: "第二點 Y 座標（公釐）",
+                        description: "第二点 Y 坐标（毫米）",
                     },
                     point2Z: {
                         type: "number",
-                        description: "第二點 Z 座標（公釐），預設 0",
+                        description: "第二点 Z 坐标（毫米），默认 0",
                         default: 0,
                     },
                 },
@@ -506,52 +516,55 @@ export function registerRevitTools(): Tool[] {
             },
         },
 
-        // 24. 取得牆資訊
+        // 24. 获取墙信息
         {
             name: "get_wall_info",
-            description: "取得牆的詳細資訊，包含厚度、長度、高度、位置線座標等。用於計算走廊淨寬。",
+            description:
+                "获取墙的详细信息，包含厚度、长度、高度、位置线坐标等。用于计算走廊净宽。",
             inputSchema: {
                 type: "object",
                 properties: {
                     wallId: {
                         type: "number",
-                        description: "牆的 Element ID",
+                        description: "墙的 Element ID",
                     },
                 },
                 required: ["wallId"],
             },
         },
 
-        // 25. 建立尺寸標註
+        // 25. 创建尺寸标注
         {
             name: "create_dimension",
-            description: "在指定視圖中建立尺寸標註。需要指定視圖和兩個參考點。",
+            description:
+                "在指定视图中创建尺寸标注。需要指定视图和两个参考点。",
             inputSchema: {
                 type: "object",
                 properties: {
                     viewId: {
                         type: "number",
-                        description: "要建立標註的視圖 ID（使用 get_active_view 或 get_all_views 取得）",
+                        description:
+                            "要创建标注的视图 ID（使用 get_active_view 或 get_all_views 获取）",
                     },
                     startX: {
                         type: "number",
-                        description: "起點 X 座標（公釐）",
+                        description: "起点 X 坐标（毫米）",
                     },
                     startY: {
                         type: "number",
-                        description: "起點 Y 座標（公釐）",
+                        description: "起点 Y 坐标（毫米）",
                     },
                     endX: {
                         type: "number",
-                        description: "終點 X 座標（公釐）",
+                        description: "终点 X 坐标（毫米）",
                     },
                     endY: {
                         type: "number",
-                        description: "終點 Y 座標（公釐）",
+                        description: "终点 Y 坐标（毫米）",
                     },
                     offset: {
                         type: "number",
-                        description: "標註線偏移距離（公釐），預設 500",
+                        description: "标注线偏移距离（毫米），默认 500",
                         default: 500,
                     },
                 },
@@ -559,76 +572,80 @@ export function registerRevitTools(): Tool[] {
             },
         },
 
-        // 25. 根據位置查詢牆體
+        // 25. 根据位置查询墙体
         {
             name: "query_walls_by_location",
-            description: "查詢指定座標附近的牆體，回傳牆厚度、位置線與牆面座標。",
+            description:
+                "查询指定坐标附近的墙体，返回墙厚度、位置线与墙面坐标。",
             inputSchema: {
                 type: "object",
                 properties: {
                     x: {
                         type: "number",
-                        description: "搜尋中心 X 座標",
+                        description: "搜索中心 X 坐标",
                     },
                     y: {
                         type: "number",
-                        description: "搜尋中心 Y 座標",
+                        description: "搜索中心 Y 坐标",
                     },
                     searchRadius: {
                         type: "number",
-                        description: "搜尋半徑 (mm)",
+                        description: "搜索半径 (mm)",
                     },
                     level: {
                         type: "string",
-                        description: "樓層名稱 (選填，例如 '2FL')",
+                        description: "楼层名称 (选填，例如 '2FL')",
                     },
                 },
                 required: ["x", "y", "searchRadius"],
             },
         },
 
-        // 26. 通用元素查詢
+        // 26. 通用元素查询
         {
             name: "query_elements",
-            description: "查詢視圖中的元素，可依照類別 (Category) 過濾。",
+            description: "查询视图中的元素，可按照类别 (Category) 过滤。",
             inputSchema: {
                 type: "object",
                 properties: {
                     category: {
                         type: "string",
-                        description: "元素類別 (例如 'Dimensions', 'Walls', 'Rooms', 'Windows')",
+                        description:
+                            "元素类别 (例如 'Dimensions', 'Walls', 'Rooms', 'Windows')",
                     },
                     viewId: {
                         type: "number",
-                        description: "視圖 ID (選填，若未提供則查詢目前視圖)",
+                        description:
+                            "视图 ID (选填，若未提供则查询当前视图)",
                     },
                     maxCount: {
                         type: "number",
-                        description: "最大回傳數量 (預設 100)",
+                        description: "最大返回数量 (默认 100)",
                     },
                 },
                 required: ["category"],
             },
         },
 
-        // 27. 覆寫元素圖形顯示
+        // 27. 覆盖元素图形显示
         {
             name: "override_element_graphics",
-            description: "在指定視圖中覆寫元素的圖形顯示（填滿顏色、圖樣、線條顏色等）。適用於平面圖中標記不同狀態的牆體或其他元素。",
+            description:
+                "在指定视图中覆盖元素的图形显示（填充颜色、图样、线条颜色等）。适用于平面图中标记不同状态的墙体或其他元素。",
             inputSchema: {
                 type: "object",
                 properties: {
                     elementId: {
                         type: "number",
-                        description: "要覆寫的元素 ID",
+                        description: "要覆盖的元素 ID",
                     },
                     viewId: {
                         type: "number",
-                        description: "視圖 ID（若不指定則使用當前視圖）",
+                        description: "视图 ID（若不指定则使用当前视图）",
                     },
                     surfaceFillColor: {
                         type: "object",
-                        description: "表面填滿顏色 RGB (0-255)",
+                        description: "表面填充颜色 RGB (0-255)",
                         properties: {
                             r: { type: "number", minimum: 0, maximum: 255 },
                             g: { type: "number", minimum: 0, maximum: 255 },
@@ -637,12 +654,13 @@ export function registerRevitTools(): Tool[] {
                     },
                     surfacePatternId: {
                         type: "number",
-                        description: "表面填充圖樣 ID（-1 表示使用實心填滿，0 表示不設定圖樣）",
+                        description:
+                            "表面填充图样 ID（-1 表示使用实心填充，0 表示不设置图样）",
                         default: -1,
                     },
                     lineColor: {
                         type: "object",
-                        description: "線條顏色 RGB（可選）",
+                        description: "线条颜色 RGB（可选）",
                         properties: {
                             r: { type: "number", minimum: 0, maximum: 255 },
                             g: { type: "number", minimum: 0, maximum: 255 },
@@ -651,7 +669,7 @@ export function registerRevitTools(): Tool[] {
                     },
                     transparency: {
                         type: "number",
-                        description: "透明度 (0-100)，0 為不透明",
+                        description: "透明度 (0-100)，0 为不透明",
                         minimum: 0,
                         maximum: 100,
                         default: 0,
@@ -661,25 +679,25 @@ export function registerRevitTools(): Tool[] {
             },
         },
 
-        // 28. 清除元素圖形覆寫
+        // 28. 清除元素图形覆盖
         {
             name: "clear_element_override",
-            description: "清除元素在指定視圖中的圖形覆寫，恢復為預設顯示。",
+            description: "清除元素在指定视图中的图形覆盖，恢复为默认显示。",
             inputSchema: {
                 type: "object",
                 properties: {
                     elementId: {
                         type: "number",
-                        description: "要清除覆寫的元素 ID",
+                        description: "要清除覆盖的元素 ID",
                     },
                     elementIds: {
                         type: "array",
                         items: { type: "number" },
-                        description: "要清除覆寫的元素 ID 列表（批次操作）",
+                        description: "要清除覆盖的元素 ID 列表（批量操作）",
                     },
                     viewId: {
                         type: "number",
-                        description: "視圖 ID（若不指定則使用當前視圖）",
+                        description: "视图 ID（若不指定则使用当前视图）",
                     },
                 },
             },
@@ -688,21 +706,21 @@ export function registerRevitTools(): Tool[] {
 }
 
 /**
- * 執行 Revit 工具
+ * 执行 Revit 工具
  */
 export async function executeRevitTool(
     toolName: string,
     args: Record<string, any>,
     client: RevitSocketClient
 ): Promise<any> {
-    // 將工具名稱轉換為 Revit 命令名稱
+    // 将工具名称转换为 Revit 命令名称
     const commandName = toolName;
 
-    // 發送命令到 Revit
+    // 发送命令到 Revit
     const response = await client.sendCommand(commandName, args);
 
     if (!response.success) {
-        throw new Error(response.error || "命令執行失敗");
+        throw new Error(response.error || "命令执行失败");
     }
 
     return response.data;

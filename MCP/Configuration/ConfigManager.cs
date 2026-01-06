@@ -18,7 +18,7 @@ namespace RevitMCP.Configuration
 
         private ConfigManager()
         {
-            // 配置檔存放在 AppData\Roaming\RevitMCP
+            // 配置文件存放在 AppData\Roaming\RevitMCP
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string configDir = Path.Combine(appDataPath, "RevitMCP");
             
@@ -47,7 +47,7 @@ namespace RevitMCP.Configuration
         }
 
         /// <summary>
-        /// 載入設定
+        /// 加载设置
         /// </summary>
         private void LoadSettings()
         {
@@ -71,7 +71,7 @@ namespace RevitMCP.Configuration
         }
 
         /// <summary>
-        /// 儲存設定
+        /// 保存设置
         /// </summary>
         public void SaveSettings()
         {
@@ -82,7 +82,7 @@ namespace RevitMCP.Configuration
             }
             catch (Exception ex)
             {
-                throw new Exception($"儲存配置失敗: {ex.Message}");
+                throw new Exception($"保存配置失败: {ex.Message}");
             }
         }
     }

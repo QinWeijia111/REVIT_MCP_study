@@ -1,48 +1,48 @@
 /**
- * 1FL 走廊法規檢討與自動標註腳本
+ * 1FL 走廊法规检讨与自动标注脚本
  */
 
 import WebSocket from 'ws';
 
-const ws = new WebSocket('ws://localhost:8964');
+const ws = new WebSocket('ws://localhost:8999');
 let step = 0;
 let activeViewId = null;
 
-// 待處理的走廊清單 (從之前的查詢結果得知)
+// 待处理的走廊清单 (从之前的查询结果得知)
 const corridors = [
-    { name: '廊下1', number: '121' },
-    { name: '廊下2', number: '29' }
+    { name: '走廊1', number: '121' },
+    { name: '走廊2', number: '29' }
 ];
 
 let currentCorridorIndex = 0;
 
 ws.on('open', function () {
-    console.log('=== 1FL 走廊法規檢討與自動標註 ===\n');
+    console.log('=== 1FL 走廊法规检讨与自动标注 ===\n');
     nextStep();
 });
 
 function nextStep() {
     step++;
 
-    // 步驟 1: 取得目前視圖
+    // 步骤 1: 获取当前视图
     if (step === 1) {
-        console.log('1. 確認目前視圖...');
+        console.log('1. 确认当前视图...');
         ws.send(JSON.stringify({ CommandName: 'get_active_view', Parameters: {}, RequestId: 'step1' }));
     }
-    // 步驟 2: 查詢目前走廊資訊
+    // 步骤 2: 查询当前走廊信息
     else if (step === 2) {
         if (currentCorridorIndex >= corridors.length) {
-            console.log('\n=== 所有走廊處理完成 ===');
+            console.log('\n=== 所有走廊处理完成 ===');
             ws.close();
             return;
         }
 
         const corridor = corridors[currentCorridorIndex];
-        console.log(`\n=== 處理走廊: ${corridor.name} [${corridor.number}] ===`);
+        console.log(`\n=== 处理走廊: ${corridor.name} [${corridor.number}] ===`);
 
-        // 先用 query_elements 找房間 ID (因為之前的 ID 可能是動態的或需要確認)
-        // 這裡直接用名字找比較保險，或者如果之前 ID 是固定的話... 
-        // 為了保險，先 query 所有 1FL 房間再 filter
+        // 先用 query_elements 找房间 ID (因为之前的 ID 可能是动态的或需要确认)
+        // 这里直接用名字找比较保险，或者如果之前 ID 是固定的话...
+        // 为了保险，先 query 所有 1FL 房间再 filter
         ws.send(JSON.stringify({
             CommandName: 'get_rooms_by_level',
             Parameters: { level: '1FL' },
@@ -54,71 +54,71 @@ function nextStep() {
 ws.on('message', function (data) {
     const response = JSON.parse(data.toString());
 
-    // 處理視圖回應
+    // 处理视图响应
     if (response.RequestId === 'step1') {
         if (response.Success) {
             activeViewId = response.Data.ElementId;
-            console.log(`   使用視圖: ${response.Data.Name} (ID: ${activeViewId})`);
-            // 檢查視圖名稱是否包含 1F 或 level 1 (非強制，僅提示)
+            console.log(`   使用视图: ${response.Data.Name} (ID: ${activeViewId})`);
+            // 检查视图名称是否包含 1F 或 level 1 (非强制，仅提示)
             if (!response.Data.Name.includes('1') && !response.Data.LevelName?.includes('1')) {
-                console.log('   ⚠️ 警告: 目前視圖似乎不是一樓平面圖，標註可能無法顯示。');
+                console.log('   ⚠️ 警告: 当前视图似乎不是一楼平面图，标注可能无法显示。');
             }
             nextStep();
         } else {
-            console.log('無法取得視圖，終止。');
+            console.log('无法获取视图，终止。');
             ws.close();
         }
     }
 
-    // 處理房間搜尋
+    // 处理房间搜索
     else if (response.RequestId === 'step2_find_room') {
         if (response.Success) {
             const targetName = corridors[currentCorridorIndex].name;
             const room = response.Data.Rooms.find(r => r.Name === targetName);
 
             if (room) {
-                console.log(`   找到房間: ID ${room.ElementId}, 面積 ${room.Area} m²`);
-                console.log(`   中心點: (${room.CenterX}, ${room.CenterY})`);
+                console.log(`   找到房间: ID ${room.ElementId}, 面积 ${room.Area} m²`);
+                console.log(`   中心点: (${room.CenterX}, ${room.CenterY})`);
 
-                // 儲存房間資訊供後續使用
+                // 保存房间信息供后续使用
                 corridors[currentCorridorIndex].info = room;
 
-                // 下一步: 查詢牆體
+                // 下一步: 查询墙体
                 queryWalls(room);
             } else {
-                console.log(`   ❌ 找不到房間 ${targetName}`);
+                console.log(`   ❌ 找不到房间 ${targetName}`);
                 currentCorridorIndex++;
-                step = 1; // 重置步驟標記以繼續迴圈
+                step = 1; // 重置步骤标记以继续循环
                 nextStep();
             }
         }
     }
 
-    // 處理牆體查詢
+    // 处理墙体查询
     else if (response.RequestId.startsWith('step3_walls')) {
         const index = parseInt(response.RequestId.split('_')[2]);
         processWallsAndDimension(response.Data, index);
     }
 
-    // 處理標註建立
+    // 处理标注创建
     else if (response.RequestId.startsWith('step4_dim')) {
         if (response.Success) {
-            console.log(`   ✅ 標註建立成功 (${response.Data.Value} mm)`);
+            console.log(`   ✅ 标注创建成功 (${response.Data.Value} mm)`);
         } else {
-            console.log(`   ❌ 標註建立失敗: ${response.Error}`);
+            console.log(`   ❌ 标注创建失败: ${response.Error}`);
         }
 
-        // 檢查是否還有待處理的標註 (例如每個走廊有 2 個標註)
-        // 這裡簡化流程：收到標註回應後，繼續下一個走廊
-        // 但我們發送了兩個標註請求，所以需要計數器或等待機制
-        // 簡單起見，我們假設這是一個非同步操作，繼續處理下一個
-        // 更好的方式是用 Promise chain，但這裡用 ws callback 結構
+        // 检查是否还有待处理的标注 (例如每个走廊有 2 个标注)
+        // 这里简化流程：收到标注响应后，继续下一个走廊
+        // 但我们发送了两个标注请求，所以需要计数器或等待机制
+        // 简单起见，我们假设这是一个异步操作，继续处理下一个
+        // 更好的方式是用 Promise chain，但这里用 ws callback 结构
     }
 });
 
 function queryWalls(room) {
-    console.log('   查詢周邊牆體...');
-    const radius = 5000; // 5m 搜尋半徑
+    console.log('   查询周边墙体...');
+    const radius = 5000; // 5m 搜索半径
 
     ws.send(JSON.stringify({
         CommandName: 'query_walls_by_location',
@@ -134,111 +134,111 @@ function queryWalls(room) {
 
 function processWallsAndDimension(wallData, index) {
     if (!wallData || wallData.Count === 0) {
-        console.log('   ❌ 找不到牆體，無法標註。');
+        console.log('   ❌ 找不到墙体，无法标注。');
         finishCorridor();
         return;
     }
 
-    // 判斷走廊方向 (水平或垂直)
-    // 簡單邏輯：看最近的兩面牆是平行於 X 還是 Y
-    // 或者看 BoundingBox 比例，但這裡我們只有中心點和牆
-    // 我們分析牆的 Orientation 分佈
+    // 判断走廊方向 (水平或垂直)
+    // 简单逻辑：看最近的两面墙是平行于 X 还是 Y
+    // 或者看 BoundingBox 比例，但这里我们只有中心点和墙
+    // 我们分析墙的 Orientation 分布
 
     const hWalls = wallData.Walls.filter(w => w.Orientation === 'Horizontal');
     const vWalls = wallData.Walls.filter(w => w.Orientation === 'Vertical');
 
     let boundaryWalls = [];
-    let direction = ''; // 標註線的方向 (Horizontal: 標註 X 軸, Vertical: 標註 Y 軸... 等等，需釐清)
+    let direction = ''; // 标注线的方向 (Horizontal: 标注 X 轴, Vertical: 标注 Y 轴... 等等，需厘清)
 
-    // 如果水平牆比較近且成對，則走廊是東西向(水平)，寬度在 Y 方向 --> 需要 Vertical 標註線 (量測 Y 距)
-    // 修正：走廊是水平長條 -> 牆在上下側 -> 牆是 Horizontal -> 量測 Y 距離
+    // 如果水平墙比较近且成对，则走廊是东西向(水平)，宽度在 Y 方向 --> 需要 Vertical 标注线 (测量 Y 距)
+    // 修正：走廊是水平长条 -> 墙在上下侧 -> 墙是 Horizontal -> 测量 Y 距离
 
-    // 找出最近的牆
+    // 找出最近的墙
     const nearestWall = wallData.Walls[0];
     const orientation = nearestWall.Orientation; // Horizontal or Vertical
 
     if (orientation === 'Horizontal') {
-        console.log('   判定走廊為東西向 (水平)，測量南北 (Y) 寬度');
+        console.log('   判定走廊为东西向 (水平)，测量南北 (Y) 宽度');
         boundaryWalls = hWalls;
-        // 找最近的兩面牆 (一個在中心上方，一個在下方)
+        // 找最近的两面墙 (一个在中心上方，一个在下方)
     } else {
-        console.log('   判定走廊為南北向 (垂直)，測量東西 (X) 寬度');
+        console.log('   判定走廊为南北向 (垂直)，测量东西 (X) 宽度');
         boundaryWalls = vWalls;
     }
 
-    // 尋找兩側面牆
+    // 寻找两侧面墙
     const center = corridors[index].info;
     const centerCoordinate = orientation === 'Horizontal' ? center.CenterY : center.CenterX;
 
-    // 分類：大於中心與小於中心
-    // 對於 Horizontal 牆，比較 Y 座標 (Face1.Y)
-    // 對於 Vertical 牆，比較 X 座標 (Face1.X)
+    // 分类：大于中心与小于中心
+    // 对于 Horizontal 墙，比较 Y 坐标 (Face1.Y)
+    // 对于 Vertical 墙，比较 X 坐标 (Face1.X)
 
     let side1Walls = [];
     let side2Walls = [];
 
     boundaryWalls.forEach(w => {
-        // 取牆面座標的平均值或 Face1 作為判斷
+        // 取墙面坐标的平均值或 Face1 作为判断
         const wallCoord = orientation === 'Horizontal' ? w.Face1.Y : w.Face1.X;
         if (wallCoord > centerCoordinate) side2Walls.push(w);
         else side1Walls.push(w);
     });
 
     if (side1Walls.length === 0 || side2Walls.length === 0) {
-        console.log('   ❌ 無法找到兩側邊界牆 (可能單側是開放或柱列)');
+        console.log('   ❌ 无法找到两侧边界墙 (可能单侧是开放或柱列)');
         finishCorridor();
         return;
     }
 
-    // 取最近的牆
-    side1Walls.sort((a, b) => b.DistanceToCenter - a.DistanceToCenter); // 錯誤：Distance是正數，應該找最小的DistanceToCenter
-    // 其實 query_walls 已經按距離排序了。
-    // 所以 side1Walls 的最後一個可能不是最近的? 不，原始列表是 sorted by distance.
-    // 所以我們只需要在原始 sorted list 中找到第一個 side1 和第一個 side2
+    // 取最近的墙
+    side1Walls.sort((a, b) => b.DistanceToCenter - a.DistanceToCenter); // 错误：Distance 是正数，应该找最小的 DistanceToCenter
+    // 其实 query_walls 已经按距离排序了。
+    // 所以 side1Walls 的最后一个可能不是最近的? 不，原始列表是 sorted by distance.
+    // 所以我们只需要在原始 sorted list 中找到第一个 side1 和第一个 side2
 
     const wall1 = side1Walls.find(w => true); // 在 sorted list 中找第一個 side1 (已是最接近的)
     const wall2 = side2Walls.find(w => true); // 在 sorted list 中找第一個 side2 (已是最接近的)
 
-    // 為了安全，重新在 boundaryWalls (已排序) 中找
+    // 为了安全，重新在 boundaryWalls (已排序) 中找
     const w1 = boundaryWalls.find(w => (orientation === 'Horizontal' ? w.Face1.Y : w.Face1.X) < centerCoordinate);
     const w2 = boundaryWalls.find(w => (orientation === 'Horizontal' ? w.Face1.Y : w.Face1.X) > centerCoordinate);
 
     if (!w1 || !w2) {
-        console.log('   ❌ 邊界牆判定失敗');
+        console.log('   ❌ 边界墙判定失败');
         finishCorridor();
         return;
     }
 
-    // 計算坐標
+    // 计算坐标
     let dimStart, dimEnd, centerStart, centerEnd;
 
     if (orientation === 'Horizontal') {
-        // 牆是水平的 -> 測量 Y
-        // 牆內緣 (Net)
+        // 墙是水平的 -> 测量 Y
+        // 墙内缘 (Net)
         // w1 在下方 (Y小), w2 在上方 (Y大)
-        // w1 的 Face 應該是 Y 較大的那個? (Face1/Face2 哪個大?)
-        // 讓我們假設 Face1, Face2 是牆的兩個面。
-        // 下方牆(w1)需取上方由 (Max Y among faces)
-        const w1MaxY = Math.max(w1.Face1.Y, w1.Face2.Y); // 下牆的上緣
-        const w2MinY = Math.min(w2.Face1.Y, w2.Face2.Y); // 上牆的下緣
+        // w1 的 Face 应该是 Y 较大的那个? (Face1/Face2 哪个大?)
+        // 让我们假设 Face1, Face2 是墙的两个面。
+        // 下方墙(w1)需取上方由 (Max Y among faces)
+        const w1MaxY = Math.max(w1.Face1.Y, w1.Face2.Y); // 下墙的上缘
+        const w2MinY = Math.min(w2.Face1.Y, w2.Face2.Y); // 上墙的下缘
 
         dimStart = { x: center.CenterX, y: w1MaxY };
         dimEnd = { x: center.CenterX, y: w2MinY };
 
-        // 中心線
+        // 中心线
         centerStart = { x: center.CenterX, y: w1.LocationLine.StartY };
         centerEnd = { x: center.CenterX, y: w2.LocationLine.StartY };
 
     } else {
-        // 牆是垂直的 -> 測量 X
+        // 墙是垂直的 -> 测量 X
         // w1 在左方 (X小), w2 在右方 (X大)
-        const w1MaxX = Math.max(w1.Face1.X, w1.Face2.X); // 左牆的右緣
-        const w2MinX = Math.min(w2.Face1.X, w2.Face2.X); // 右牆的左緣
+        const w1MaxX = Math.max(w1.Face1.X, w1.Face2.X); // 左墙的右缘
+        const w2MinX = Math.min(w2.Face1.X, w2.Face2.X); // 右墙的左缘
 
         dimStart = { x: w1MaxX, y: center.CenterY };
         dimEnd = { x: w2MinX, y: center.CenterY };
 
-        // 中心線
+        // 中心线
         centerStart = { x: w1.LocationLine.StartX, y: center.CenterY };
         centerEnd = { x: w2.LocationLine.StartX, y: center.CenterY };
     }
@@ -247,49 +247,49 @@ function processWallsAndDimension(wallData, index) {
         ? Math.abs(dimEnd.y - dimStart.y)
         : Math.abs(dimEnd.x - dimStart.x);
 
-    console.log(`   淨寬: ${netWidth.toFixed(1)} mm`);
+    console.log(`   净宽: ${netWidth.toFixed(1)} mm`);
 
-    // 法規檢討
+    // 法规检讨
     checkCompliance(netWidth);
 
-    // 建立標註
+    // 创建标注
     createDimensions(dimStart, dimEnd, centerStart, centerEnd, orientation);
 
-    // 這裡我們需要一個延遲，確保標註命令發送後再進下一走廊
+    // 这里我们需要一个延迟，确保标注命令发送后再进下一走廊
     setTimeout(finishCorridor, 1000);
 }
 
 function checkCompliance(width) {
-    console.log('   [法規檢討]');
+    console.log('   [法规检讨]');
     const w = width; // mm
 
-    // 台灣法規
-    if (w >= 1600) console.log('   ✅ 符合雙側居室標準 (>=1.6m)');
-    else if (w >= 1200) console.log('   ⚠️ 符合單側居室標準 (>=1.2m), 但不符雙側要求');
-    else console.log('   ❌ 不符合走廊寬度標準 (<1.2m)');
+    // 台湾法规
+    if (w >= 1600) console.log('   ✅ 符合双侧居室标准 (>=1.6m)');
+    else if (w >= 1200) console.log('   ⚠️ 符合单侧居室标准 (>=1.2m), 但不符双侧要求');
+    else console.log('   ❌ 不符合走廊宽度标准 (<1.2m)');
 }
 
 function createDimensions(p1, p2, c1, c2, orientation) {
-    // 內緣標註
+    // 内缘标注
     ws.send(JSON.stringify({
         CommandName: 'create_dimension',
         Parameters: {
             viewId: activeViewId,
             startX: p1.x, startY: p1.y,
             endX: p2.x, endY: p2.y,
-            offset: 1200 // 內側
+            offset: 1200 // 内侧
         },
         RequestId: `step4_dim_net_${currentCorridorIndex}`
     }));
 
-    // 中心標註
+    // 中心标注
     ws.send(JSON.stringify({
         CommandName: 'create_dimension',
         Parameters: {
             viewId: activeViewId,
             startX: c1.x, startY: c1.y,
             endX: c2.x, endY: c2.y,
-            offset: 2000 // 外側
+            offset: 2000 // 外侧
         },
         RequestId: `step4_dim_center_${currentCorridorIndex}`
     }));
@@ -297,12 +297,12 @@ function createDimensions(p1, p2, c1, c2, orientation) {
 
 function finishCorridor() {
     currentCorridorIndex++;
-    step = 1; // 重置步驟
+    step = 1; // 重置步骤
     nextStep();
 }
 
 ws.on('error', function (error) {
-    console.error('連線錯誤:', error.message);
+    console.error('连接错误:', error.message);
 });
 
 ws.on('close', function () {

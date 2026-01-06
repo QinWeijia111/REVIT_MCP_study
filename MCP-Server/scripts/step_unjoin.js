@@ -3,7 +3,7 @@
  */
 import WebSocket from 'ws';
 
-const ws = new WebSocket('ws://localhost:8964');
+const ws = new WebSocket('ws://localhost:8999');
 
 ws.on('open', () => {
     console.log('Step: Unjoin wall-column geometry...');

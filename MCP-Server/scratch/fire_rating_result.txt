@@ -1,5 +1,5 @@
 === Fire Rating Visualization ===
-Using parameter: s_CW_防火防煙性能
+Using parameter: s_CW_防火防烟性能
 View: 平面図_01_部屋チェック図_2階
 Walls found: 40
 

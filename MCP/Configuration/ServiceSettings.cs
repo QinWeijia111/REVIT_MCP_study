@@ -3,33 +3,33 @@ using System;
 namespace RevitMCP.Configuration
 {
     /// <summary>
-    /// MCP 服務設定
+    /// MCP 服务设置
     /// </summary>
     [Serializable]
     public class ServiceSettings
     {
         /// <summary>
-        /// WebSocket 伺服器主機位址
+        /// WebSocket 服务器主机地址
         /// </summary>
         public string Host { get; set; } = "localhost";
 
         /// <summary>
-        /// WebSocket 伺服器埠號
+        /// WebSocket 服务器端口
         /// </summary>
-        public int Port { get; set; } = 8964;
+        public int Port { get; set; } = 8999;
 
         /// <summary>
-        /// 是否啟用 MCP 服務
+        /// 是否启用 MCP 服务
         /// </summary>
         public bool IsEnabled { get; set; } = false;
 
         /// <summary>
-        /// 自動重連間隔（毫秒）
+        /// 自动重连间隔（毫秒）
         /// </summary>
         public int ReconnectInterval { get; set; } = 5000;
 
         /// <summary>
-        /// 命令執行逾時時間（毫秒）
+        /// 命令执行超时时间（毫秒）
         /// </summary>
         public int CommandTimeout { get; set; } = 30000;
     }

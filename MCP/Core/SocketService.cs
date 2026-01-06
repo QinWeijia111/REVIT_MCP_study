@@ -12,7 +12,7 @@ using RevitMCP.Models;
 namespace RevitMCP.Core
 {
     /// <summary>
-    /// WebSocket 服務 - 作為伺服器端接收 MCP Server 的連線
+    /// WebSocket 服务 - 作为服务器端接收 MCP Server 的连接
     /// </summary>
     public class SocketService
     {
@@ -31,7 +31,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 啟動 WebSocket 伺服器
+        /// 启动 WebSocket 服务器
         /// </summary>
         public async Task StartAsync()
         {
@@ -45,26 +45,26 @@ namespace RevitMCP.Core
                 _cancellationTokenSource = new CancellationTokenSource();
                 _isRunning = true;
 
-                // 使用 HttpListener 來接受 WebSocket 連線
+                // 使用 HttpListener 来接受 WebSocket 连接
                 _httpListener = new HttpListener();
                 _httpListener.Prefixes.Add($"http://{_settings.Host}:{_settings.Port}/");
                 _httpListener.Start();
 
-                TaskDialog.Show("MCP 服務", $"WebSocket 伺服器已啟動\n監聽: {_settings.Host}:{_settings.Port}");
+                TaskDialog.Show("MCP 服务", $"WebSocket 服务器已启动\n监听: {_settings.Host}:{_settings.Port}");
 
-                // 在背景執行緒中等待連線
+                // 在后台线程中等待连接
                 _ = Task.Run(async () => await AcceptConnectionsAsync(_cancellationTokenSource.Token));
             }
             catch (Exception ex)
             {
                 _isRunning = false;
-                TaskDialog.Show("錯誤", $"啟動 WebSocket 伺服器失敗: {ex.Message}");
+                TaskDialog.Show("错误", $"启动 WebSocket 服务器失败: {ex.Message}");
                 throw;
             }
         }
 
         /// <summary>
-        /// 接受 WebSocket 連線
+        /// 接受 WebSocket 连接
         /// </summary>
         private async Task AcceptConnectionsAsync(CancellationToken cancellationToken)
         {
@@ -79,9 +79,9 @@ namespace RevitMCP.Core
                         var wsContext = await context.AcceptWebSocketAsync(null);
                         _webSocket = wsContext.WebSocket;
 
-                        System.Diagnostics.Debug.WriteLine("[Socket] MCP Server 已連線");
+                        System.Diagnostics.Debug.WriteLine("[Socket] MCP Server 已连接");
 
-                        // 開始接收訊息
+                        // 开始接收消息
                         await ReceiveMessagesAsync(cancellationToken);
                     }
                     else
@@ -94,14 +94,14 @@ namespace RevitMCP.Core
                 {
                     if (_isRunning)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[Socket] 接受連線錯誤: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"[Socket] 接受连接错误: {ex.Message}");
                     }
                 }
             }
         }
 
         /// <summary>
-        /// 接收訊息
+        /// 接收消息
         /// </summary>
         private async Task ReceiveMessagesAsync(CancellationToken cancellationToken)
         {
@@ -121,19 +121,19 @@ namespace RevitMCP.Core
                     else if (result.MessageType == WebSocketMessageType.Close)
                     {
                         await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken);
-                        System.Diagnostics.Debug.WriteLine("[Socket] MCP Server 已斷線");
+                        System.Diagnostics.Debug.WriteLine("[Socket] MCP Server 已断线");
                         break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Socket] 接收訊息錯誤: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[Socket] 接收消息错误: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// 處理接收到的訊息
+        /// 处理接收到的消息
         /// </summary>
         private void HandleMessage(string message)
         {
@@ -144,18 +144,18 @@ namespace RevitMCP.Core
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Socket] 解析命令失敗: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[Socket] 解析命令失败: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// 發送回應
+        /// 发送回应
         /// </summary>
         public async Task SendResponseAsync(RevitCommandResponse response)
         {
             if (!IsConnected)
             {
-                throw new InvalidOperationException("WebSocket 未連線");
+                throw new InvalidOperationException("WebSocket 未连接");
             }
 
             try
@@ -166,13 +166,13 @@ namespace RevitMCP.Core
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Socket] 發送回應失敗: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[Socket] 发送回应失败: {ex.Message}");
                 throw;
             }
         }
 
         /// <summary>
-        /// 停止服務
+        /// 停止服务
         /// </summary>
         public void Stop()
         {
@@ -181,11 +181,11 @@ namespace RevitMCP.Core
 
             if (_webSocket != null && _webSocket.State == WebSocketState.Open)
             {
-                _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "服務關閉", CancellationToken.None).Wait();
+                _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "服务关闭", CancellationToken.None).Wait();
             }
 
             _httpListener?.Stop();
-            TaskDialog.Show("MCP 服務", "WebSocket 伺服器已停止");
+            TaskDialog.Show("MCP 服务", "WebSocket 服务器已停止");
         }
     }
 }

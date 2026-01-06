@@ -5,7 +5,7 @@ namespace RevitMCP.Core
 {
     /// <summary>
     /// 外部事件管理器
-    /// 確保命令在 Revit UI 執行緒中執行
+    /// 确保命令在 Revit UI 线程中执行
     /// </summary>
     public class ExternalEventManager
     {
@@ -37,7 +37,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 執行命令
+        /// 执行命令
         /// </summary>
         public void ExecuteCommand(Action<UIApplication> action)
         {
@@ -46,7 +46,7 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 命令事件處理器
+        /// 命令事件处理器
         /// </summary>
         private class CommandEventHandler : IExternalEventHandler
         {
@@ -65,7 +65,7 @@ namespace RevitMCP.Core
                 }
                 catch (Exception ex)
                 {
-                    TaskDialog.Show("命令執行錯誤", ex.Message);
+                    TaskDialog.Show("命令执行错误", ex.Message);
                 }
             }
 
