@@ -3,10 +3,10 @@
     "revit-mcp": {
       "command": "node",
       "args": [
-        "c:/Users/User/Desktop/REVIT MCP/MCP-Server/build/index.js"
+        "d:/study/projects/revit-mcp/REVIT_MCP_study/MCP-Server/build/index.js"
       ],
       "env": {
-        "REVIT_VERSION": "2024"
+        "REVIT_VERSION": "2023"
       }
     }
   }
