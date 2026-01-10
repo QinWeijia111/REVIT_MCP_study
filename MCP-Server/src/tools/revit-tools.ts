@@ -58,30 +58,105 @@ export function registerRevitTools(): Tool[] {
             },
         },
 
+        {
+            name: "get_categories",
+            description:
+                "获取当前视图中出现过的元素类别清单，并给出可用于 query_elements 的 QueryName。",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    viewId: {
+                        type: "number",
+                        description: "视图 ID（若不指定则使用当前视图）",
+                    },
+                    sampleLimit: {
+                        type: "number",
+                        description: "采样元素数量上限（默认 5000）",
+                        default: 5000,
+                    },
+                    maxCount: {
+                        type: "number",
+                        description: "返回类别数量上限（默认 200）",
+                        default: 200,
+                    },
+                },
+            },
+        },
+
         // 3. 查询元素
         {
             name: "query_elements",
-            description: "查询 Revit 项目中的元素。可按类别、族群、类型等条件筛选。",
+            description:
+                "查询 Revit 项目中的元素（默认在当前视图内）。category 推荐使用 get_categories 返回的 QueryName（如 Walls/Doors/Windows/Floors/Rooms/Dimensions/AllColumns），也支持中文别名（如 墙/门/窗/楼板/房间/标注/柱）。",
             inputSchema: {
                 type: "object",
                 properties: {
                     category: {
                         type: "string",
-                        description: "元素类别（如：墙、门、窗等）",
+                        description:
+                            "元素类别（推荐 QueryName，例如 Walls/Doors/Windows/Floors/Rooms/Dimensions/AllColumns）",
+                    },
+                    viewId: {
+                        type: "number",
+                        description: "视图 ID（若不指定则使用当前视图）",
+                    },
+                    maxCount: {
+                        type: "number",
+                        description: "返回数量上限（默认 100）",
+                        default: 100,
                     },
                     family: {
                         type: "string",
-                        description: "族群名称（选填）",
+                        description:
+                            "族群名称（选填，部分实现可能忽略此字段）",
                     },
                     type: {
                         type: "string",
-                        description: "类型名称（选填）",
+                        description: "类型名称（选填，部分实现可能忽略此字段）",
                     },
                     level: {
                         type: "string",
-                        description: "楼层名称（选填）",
+                        description: "楼层名称（选填，部分实现可能忽略此字段）",
                     },
                 },
+                required: ["category"],
+            },
+        },
+
+        {
+            name: "create_room",
+            description:
+                "在指定楼层的平面位置创建房间（位置需在封闭边界内）。坐标单位毫米（mm）。",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    level: {
+                        type: "string",
+                        description: "楼层名称（也支持 levelName）",
+                        default: "Level 1",
+                    },
+                    levelName: {
+                        type: "string",
+                        description: "楼层名称（可选，与 level 等价）",
+                    },
+                    x: {
+                        type: "number",
+                        description: "放置点 X 坐标（毫米）",
+                    },
+                    y: {
+                        type: "number",
+                        description: "放置点 Y 坐标（毫米）",
+                    },
+                    name: {
+                        type: "string",
+                        description: "房间名称（可选）",
+                    },
+                    number: {
+                        type: "string",
+                        description: "房间编号（可选）",
+                    },
+                },
+                required: ["x", "y"],
             },
         },
 

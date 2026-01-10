@@ -1,0 +1,56 @@
+# Revit MCP（REVIT_MCP_study）— Cline 工作区规则
+
+## 目标
+- 以最少改动完成需求，优先复用现有结构与模式
+- 修改 C# / TypeScript 时，严格遵循本项目的线程、事务、单位与通信约束
+- 不要提交/生成构建产物与依赖目录（build、bin、obj、node_modules）
+
+## 技术栈与目录
+- Windows + Autodesk Revit（2022/2023/2024），目标版本偏向 2023
+- C#/.NET Framework 4.8：`MCP/`（Revit Add-in，WebSocket 服务端）
+- Node.js/TypeScript：`MCP-Server/`（MCP Server，stdio transport）
+- 业务流程与协议：`domain/`（实现复杂功能前先查是否已有流程文件）
+
+## 关键约束（必须遵守）
+- 通信链路：AI（MCP Client）→ MCP Server（stdio）→ WebSocket（localhost:8999）→ Revit Add-in → Revit API
+- Revit API 只能在 UI 线程执行：通过 `ExternalEventManager` 调度执行
+- 所有写操作必须包裹 `Transaction`，保证可撤销（Ctrl+Z）
+- 单位：MCP 层使用毫米（mm），Revit API 使用英尺（ft），转换：`ft = mm / 304.8`，`mm = ft * 304.8`
+- WebSocket 只绑定 localhost；不要引入对外网暴露的改动
+
+## 常用命令（PowerShell）
+```powershell
+# 构建 MCP Server（TS → JS）
+cd MCP-Server
+npm install
+npm run build
+
+# 构建 Revit Add-in（C# → DLL，Revit 2023 默认）
+cd ..\MCP
+dotnet build -c Release
+```
+
+## 变更影响与验证
+- 修改 `MCP/*.cs`：
+  - 关闭 Revit → `dotnet build -c Release` → 重新部署 DLL（脚本或手动）→ 重启 Revit
+- 修改 `MCP-Server/*.ts`：
+  - `npm run build`（或 `npm run dev`）→ 重启/重连 MCP Client（取决于客户端）
+- 修改配置文件（`.json`、`.addin`）：
+  - 可能需要重启对应客户端或 Revit；确保端口与路径一致
+
+## 新增/修改 MCP 工具的固定流程
+- 在 `MCP-Server/src/tools/revit-tools.ts` 增加/更新 tool schema（name/description/inputSchema）
+- 在 `MCP/Core/CommandExecutor.cs` 增加/更新对应 handler 分支
+- 同步更新输入/输出 DTO（如需要，在 `MCP/Models/`）
+- 重新构建 MCP Server 与 Add-in，并在 Revit 中实际调用验证
+
+## 常见坑（避免）
+- 忘记 Transaction：写操作会抛异常或行为不一致
+- 错误线程调用：不要在 WebSocket 回调线程直接调用 Revit API
+- 混用 mm/ft：几何位置与尺寸会出现数量级偏差
+- 视图上下文错误：标注/覆盖图形需匹配正确 View 类型与 ActiveView
+
+## 工程约定
+- 优先跟随项目现有代码风格与结构，不要引入新框架
+- 不要无故添加注释或额外文档；仅在需求明确要求时添加
+- 修改涉及端口、路径、版本映射时，确保 `.vscode/mcp.json` 与 `MCP/Configuration/config.json` 保持一致

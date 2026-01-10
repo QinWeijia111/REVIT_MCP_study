@@ -21,6 +21,7 @@ namespace RevitMCP.Core
         private bool _isRunning;
         private readonly ServiceSettings _settings;
         private CancellationTokenSource _cancellationTokenSource;
+        private int _activeConnectionId;
 
         public event EventHandler<RevitCommandRequest> CommandReceived;
         public bool IsConnected => _webSocket != null && _webSocket.State == WebSocketState.Open;
@@ -77,12 +78,35 @@ namespace RevitMCP.Core
                     if (context.Request.IsWebSocketRequest)
                     {
                         var wsContext = await context.AcceptWebSocketAsync(null);
-                        _webSocket = wsContext.WebSocket;
+                        var newSocket = wsContext.WebSocket;
+                        var connectionId = Interlocked.Increment(ref _activeConnectionId);
+                        var previousSocket = _webSocket;
+                        _webSocket = newSocket;
+
+                        if (previousSocket != null && previousSocket.State == WebSocketState.Open)
+                        {
+                            try
+                            {
+                                await previousSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Replaced by new client", CancellationToken.None);
+                            }
+                            catch
+                            {
+                            }
+                        }
 
                         System.Diagnostics.Debug.WriteLine("[Socket] MCP Server 已连接");
 
                         // 开始接收消息
-                        await ReceiveMessagesAsync(cancellationToken);
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await ReceiveMessagesAsync(newSocket, connectionId, cancellationToken);
+                            }
+                            catch
+                            {
+                            }
+                        }, CancellationToken.None);
                     }
                     else
                     {
@@ -103,15 +127,20 @@ namespace RevitMCP.Core
         /// <summary>
         /// 接收消息
         /// </summary>
-        private async Task ReceiveMessagesAsync(CancellationToken cancellationToken)
+        private async Task ReceiveMessagesAsync(WebSocket socket, int connectionId, CancellationToken cancellationToken)
         {
             var buffer = new byte[4096];
 
             try
             {
-                while (_webSocket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+                while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
                 {
-                    var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+                    if (connectionId != _activeConnectionId || !ReferenceEquals(socket, _webSocket))
+                    {
+                        break;
+                    }
+
+                    var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
 
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
@@ -120,7 +149,7 @@ namespace RevitMCP.Core
                     }
                     else if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken);
+                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken);
                         System.Diagnostics.Debug.WriteLine("[Socket] MCP Server 已断线");
                         break;
                     }

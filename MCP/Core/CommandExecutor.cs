@@ -68,6 +68,10 @@ namespace RevitMCP.Core
                         result = GetProjectInfo();
                         break;
 
+                    case "get_categories":
+                        result = GetCategories(parameters);
+                        break;
+
                     
                     case "create_floor":
                         result = CreateFloor(parameters);
@@ -123,6 +127,10 @@ namespace RevitMCP.Core
                     
                     case "get_rooms_by_level":
                         result = GetRoomsByLevel(parameters);
+                        break;
+
+                    case "create_room":
+                        result = CreateRoom(parameters);
                         break;
                     
                     case "get_all_views":
@@ -1055,6 +1063,178 @@ namespace RevitMCP.Core
             };
         }
 
+        private static Dictionary<int, string> _builtInCategoryNameById;
+
+        private static Dictionary<int, string> GetBuiltInCategoryNameById()
+        {
+            if (_builtInCategoryNameById != null)
+            {
+                return _builtInCategoryNameById;
+            }
+
+            var map = new Dictionary<int, string>();
+            foreach (BuiltInCategory bic in Enum.GetValues(typeof(BuiltInCategory)))
+            {
+                var id = (int)bic;
+                if (!map.ContainsKey(id))
+                {
+                    map[id] = bic.ToString();
+                }
+            }
+
+            _builtInCategoryNameById = map;
+            return _builtInCategoryNameById;
+        }
+
+        private object GetCategories(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            int? viewId = parameters["viewId"]?.Value<int>();
+            int sampleLimit = parameters["sampleLimit"]?.Value<int>() ?? 5000;
+            int maxCount = parameters["maxCount"]?.Value<int>() ?? 200;
+
+            ElementId targetViewId = viewId.HasValue ? new ElementId(viewId.Value) : doc.ActiveView.Id;
+            var collector = new FilteredElementCollector(doc, targetViewId).WhereElementIsNotElementType();
+
+            var builtInNameById = GetBuiltInCategoryNameById();
+            var categoriesById = new Dictionary<int, Category>();
+
+            int scanned = 0;
+            foreach (var elem in collector)
+            {
+                scanned++;
+                if (scanned > sampleLimit)
+                {
+                    break;
+                }
+
+                var cat = elem.Category;
+                if (cat == null)
+                {
+                    continue;
+                }
+
+                var id = cat.Id.IntegerValue;
+                if (!categoriesById.ContainsKey(id))
+                {
+                    categoriesById[id] = cat;
+                }
+            }
+
+            var categories = categoriesById
+                .Select(kvp =>
+                {
+                    var id = kvp.Key;
+                    var cat = kvp.Value;
+                    builtInNameById.TryGetValue(id, out var builtInName);
+                    string queryName = null;
+                    if (!string.IsNullOrEmpty(builtInName))
+                    {
+                        queryName = builtInName.StartsWith("OST_") ? builtInName.Substring(4) : builtInName;
+                    }
+
+                    return new
+                    {
+                        CategoryId = id,
+                        CategoryName = cat.Name,
+                        BuiltInCategory = builtInName,
+                        QueryName = queryName
+                    };
+                })
+                .OrderBy(c => c.QueryName ?? c.CategoryName)
+                .Take(maxCount)
+                .ToList();
+
+            var commonAliases = new List<object>
+            {
+                new { Input = "柱", Category = "AllColumns" },
+                new { Input = "结构柱", Category = "StructuralColumns" },
+                new { Input = "墙", Category = "Walls" },
+                new { Input = "门", Category = "Doors" },
+                new { Input = "窗", Category = "Windows" },
+                new { Input = "楼板", Category = "Floors" },
+                new { Input = "房间", Category = "Rooms" },
+                new { Input = "标注", Category = "Dimensions" }
+            };
+
+            return new
+            {
+                Success = true,
+                ViewId = targetViewId.IntegerValue,
+                ScannedElements = scanned,
+                Count = categories.Count,
+                Categories = categories,
+                CommonAliases = commonAliases
+            };
+        }
+
+        private object CreateRoom(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            string levelName = parameters["level"]?.Value<string>() ?? parameters["levelName"]?.Value<string>();
+            if (string.IsNullOrEmpty(levelName))
+            {
+                throw new Exception("请指定 level 或 levelName");
+            }
+
+            double xMm = parameters["x"]?.Value<double>() ?? parameters["locationX"]?.Value<double>() ?? 0;
+            double yMm = parameters["y"]?.Value<double>() ?? parameters["locationY"]?.Value<double>() ?? 0;
+            string roomName = parameters["name"]?.Value<string>();
+            string roomNumber = parameters["number"]?.Value<string>();
+
+            Level targetLevel = FindLevel(doc, levelName, false);
+
+            Room room;
+            using (Transaction trans = new Transaction(doc, "Create Room"))
+            {
+                trans.Start();
+
+                room = doc.Create.NewRoom(targetLevel, new UV(xMm / 304.8, yMm / 304.8));
+                if (room == null)
+                {
+                    throw new Exception("创建房间失败（可能位置未封闭或视图/楼层不支持）");
+                }
+
+                if (!string.IsNullOrEmpty(roomName))
+                {
+                    var p = room.get_Parameter(BuiltInParameter.ROOM_NAME);
+                    if (p != null && !p.IsReadOnly)
+                    {
+                        p.Set(roomName);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(roomNumber))
+                {
+                    var p = room.get_Parameter(BuiltInParameter.ROOM_NUMBER);
+                    if (p != null && !p.IsReadOnly)
+                    {
+                        p.Set(roomNumber);
+                    }
+                }
+
+                trans.Commit();
+            }
+
+            LocationPoint locPoint = room.Location as LocationPoint;
+            XYZ center = locPoint?.Point ?? XYZ.Zero;
+            double areaM2 = room.Area * 0.092903;
+
+            return new
+            {
+                Success = true,
+                ElementId = room.Id.IntegerValue,
+                Level = targetLevel.Name,
+                Name = room.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString(),
+                Number = room.Number,
+                Area = Math.Round(areaM2, 2),
+                CenterX = Math.Round(center.X * 304.8, 2),
+                CenterY = Math.Round(center.Y * 304.8, 2)
+            };
+        }
+
         /// <summary>
         /// 获取所有视图
         /// </summary>
@@ -1519,6 +1699,28 @@ namespace RevitMCP.Core
                 {
                     throw new Exception("必须提供 category 参数");
                 }
+
+                categoryName = categoryName.Trim();
+                var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    { "柱", "AllColumns" },
+                    { "柱子", "AllColumns" },
+                    { "结构柱", "StructuralColumns" },
+                    { "墙", "Walls" },
+                    { "墙体", "Walls" },
+                    { "门", "Doors" },
+                    { "窗", "Windows" },
+                    { "楼板", "Floors" },
+                    { "地板", "Floors" },
+                    { "房间", "Rooms" },
+                    { "标注", "Dimensions" },
+                    { "尺寸", "Dimensions" },
+                    { "尺寸标注", "Dimensions" }
+                };
+                if (aliases.TryGetValue(categoryName, out var mappedCategory))
+                {
+                    categoryName = mappedCategory;
+                }
                 
                 // 决定查询范围: 指定视图 或 当前视图
                 ElementId targetViewId = viewId.HasValue ? new ElementId(viewId.Value) : doc.ActiveView.Id;
@@ -1559,9 +1761,18 @@ namespace RevitMCP.Core
                     {
                         elements = collector.OfCategory(BuiltInCategory.OST_Columns).ToElements().ToList();
                     }
+                    else if (categoryName.Equals("AllColumns", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var cols = collector.OfCategory(BuiltInCategory.OST_Columns).ToElements();
+                        var structCols = collector.OfCategory(BuiltInCategory.OST_StructuralColumns).ToElements();
+                        elements = cols.Concat(structCols)
+                            .GroupBy(e => e.Id.IntegerValue)
+                            .Select(g => g.First())
+                            .ToList();
+                    }
                     else
                     {
-                        throw new Exception($"不支持的类别: {categoryName}");
+                        throw new Exception($"不支持的类别: {categoryName}。可先调用 get_categories 获取当前视图实际出现的类别；常用值示例: Walls, Doors, Windows, Floors, Rooms, Columns, StructuralColumns, Dimensions");
                     }
                 }
                 
@@ -1599,7 +1810,7 @@ namespace RevitMCP.Core
             }
             catch (Exception ex)
             {
-                 throw new Exception($"QueryElements 错误: {ex.Message}");
+                 throw new Exception($"查询元素失败: {ex.Message}");
             }
         }
 
